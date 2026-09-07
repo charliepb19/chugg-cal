@@ -173,12 +173,23 @@ async function callGateway(
   const content = json.choices?.[0]?.message?.content ?? "{}";
   const cleaned = content.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
 
-  let parsed: { items?: RawItem[]; assignments?: RawItem[]; semesterStart?: unknown; semesterEnd?: unknown };
+  let parsed: {
+    items?: RawItem[];
+    assignments?: RawItem[];
+    semesterStart?: unknown;
+    semesterEnd?: unknown;
+    readable?: unknown;
+  };
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Could not read assignments from that file.");
+    throw new Error(opts.unreadableMessage ?? "Could not read assignments from that file.");
   }
+
+  if (parsed.readable === false && opts.unreadableMessage) {
+    throw new Error(opts.unreadableMessage);
+  }
+
 
   const semesterStart = isDate(parsed.semesterStart) ? parsed.semesterStart : null;
   const semesterEnd = isDate(parsed.semesterEnd) ? parsed.semesterEnd : null;
