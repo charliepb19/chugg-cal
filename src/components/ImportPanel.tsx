@@ -216,7 +216,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       <input
         ref={imgRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif,image/*"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
