@@ -10,6 +10,8 @@ export type Course = {
 
 export type AssignmentSource = "manual" | "parsed_pdf" | "parsed_image";
 
+export type AssignmentType = "assignment" | "exam" | "quiz" | "reading";
+
 export type Assignment = {
   id: string;
   course_id: string;
@@ -19,6 +21,8 @@ export type Assignment = {
   completed: boolean;
   source: AssignmentSource;
   confirmed: boolean;
+  type: AssignmentType;
+  weight: string;
 };
 
 export const COURSE_COLORS = [
