@@ -31,6 +31,7 @@ type RawItem = {
   type?: unknown;
   weight?: unknown;
   notes?: unknown;
+  yearVisible?: unknown;
   recurring?: unknown;
   recurrence?: {
     weekday?: unknown;
