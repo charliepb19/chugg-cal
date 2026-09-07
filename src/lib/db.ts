@@ -10,6 +10,8 @@ export type Course = {
 
 export type AssignmentSource = "manual" | "parsed_pdf" | "parsed_image";
 
+export type AssignmentType = "assignment" | "exam" | "quiz" | "reading";
+
 export type Assignment = {
   id: string;
   course_id: string;
@@ -19,6 +21,8 @@ export type Assignment = {
   completed: boolean;
   source: AssignmentSource;
   confirmed: boolean;
+  type: AssignmentType;
+  weight: string;
 };
 
 export const COURSE_COLORS = [
@@ -49,7 +53,7 @@ export const assignmentsQuery = {
   queryFn: async (): Promise<Assignment[]> => {
     const { data, error } = await supabase
       .from("assignments")
-      .select("id,course_id,title,notes,due_date,completed,source,confirmed")
+      .select("id,course_id,title,notes,due_date,completed,source,confirmed,type,weight")
       .order("due_date", { ascending: true, nullsFirst: false });
     if (error) throw error;
     return (data ?? []) as Assignment[];

@@ -65,6 +65,8 @@ export function ImportPanel({ courseId }: { courseId: string }) {
           due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
           source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
           confirmed: true,
+          type: r.type,
+          weight: r.weight,
         })),
       );
       if (error) throw error;
@@ -88,40 +90,55 @@ export function ImportPanel({ courseId }: { courseId: string }) {
             Discard
           </Button>
         </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Nothing is saved until you confirm. Edit anything that looks off.
+        </p>
         <div className="mt-4 divide-y divide-border">
-          {rows.map((row, i) => (
-            <div key={i} className="flex items-center gap-3 py-2.5">
-              <Checkbox
-                checked={row.include}
-                onCheckedChange={(v) =>
-                  setRows((prev) =>
-                    (prev ?? []).map((r, j) => (j === i ? { ...r, include: Boolean(v) } : r)),
-                  )
-                }
-              />
-              <Input
-                value={row.title}
-                onChange={(e) =>
-                  setRows((prev) =>
-                    (prev ?? []).map((r, j) => (j === i ? { ...r, title: e.target.value } : r)),
-                  )
-                }
-                className="h-9 flex-1"
-              />
-              <Input
-                type="date"
-                value={row.dueDate ?? ""}
-                onChange={(e) =>
-                  setRows((prev) =>
-                    (prev ?? []).map((r, j) =>
-                      j === i ? { ...r, dueDate: e.target.value || null } : r,
-                    ),
-                  )
-                }
-                className="h-9 w-40"
-              />
-            </div>
-          ))}
+          {rows.map((row, i) => {
+            const update = (patch: Partial<Row>) =>
+              setRows((prev) => (prev ?? []).map((r, j) => (j === i ? { ...r, ...patch } : r)));
+            return (
+              <div key={i} className="flex flex-wrap items-center gap-2 py-2.5 sm:flex-nowrap sm:gap-3">
+                <Checkbox
+                  checked={row.include}
+                  onCheckedChange={(v) => update({ include: Boolean(v) })}
+                />
+                <Input
+                  value={row.title}
+                  onChange={(e) => update({ title: e.target.value })}
+                  className="h-9 min-w-40 flex-1"
+                />
+                <select
+                  value={row.type}
+                  onChange={(e) => update({ type: e.target.value as Row["type"] })}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  aria-label="Type"
+                >
+                  <option value="assignment">Assignment</option>
+                  <option value="exam">Exam</option>
+                  <option value="quiz">Quiz</option>
+                  <option value="reading">Reading</option>
+                </select>
+                <Input
+                  value={row.weight}
+                  placeholder="Weight"
+                  onChange={(e) => update({ weight: e.target.value })}
+                  className="h-9 w-24"
+                />
+                <Input
+                  type="date"
+                  value={row.dueDate ?? ""}
+                  onChange={(e) => update({ dueDate: e.target.value || null })}
+                  className="h-9 w-40"
+                />
+                {row.recurring && (
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                    repeating
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
         <Button className="mt-4" onClick={save} disabled={saving || count === 0}>
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}

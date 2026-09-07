@@ -25,7 +25,9 @@ export type Database = {
           notes: string
           source: string
           title: string
+          type: string
           user_id: string
+          weight: string
         }
         Insert: {
           completed?: boolean
@@ -37,7 +39,9 @@ export type Database = {
           notes?: string
           source?: string
           title: string
+          type?: string
           user_id: string
+          weight?: string
         }
         Update: {
           completed?: boolean
@@ -49,7 +53,9 @@ export type Database = {
           notes?: string
           source?: string
           title?: string
+          type?: string
           user_id?: string
+          weight?: string
         }
         Relationships: [
           {
