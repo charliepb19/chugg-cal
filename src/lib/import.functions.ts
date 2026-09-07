@@ -213,8 +213,26 @@ async function callGateway(
       continue;
     }
 
-    const date = isDate(item.date) ? item.date : isDate(item.dueDate) ? item.dueDate : null;
-    out.push({ title, dueDate: date, notes, type, weight, recurring: false });
+    let date = isDate(item.date) ? item.date : isDate(item.dueDate) ? item.dueDate : null;
+    let yearUnconfirmed = false;
+
+    if (date && item.yearVisible === false) {
+      if (opts.inferYear) {
+        // The screenshot showed only month/day — anchor it to the course's own year.
+        const monthDay = date.slice(5);
+        const month = Number(date.slice(5, 7));
+        // Fall terms run into January; a January-April date belongs to the next year.
+        const year =
+          opts.inferYear && month <= 4 && (opts.semesterMonth ?? 0) >= 8
+            ? opts.inferYear + 1
+            : opts.inferYear;
+        date = `${year}-${monthDay}`;
+      } else {
+        yearUnconfirmed = true;
+      }
+    }
+
+    out.push({ title, dueDate: date, notes, type, weight, recurring: false, yearUnconfirmed });
   }
 
   return out.sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
