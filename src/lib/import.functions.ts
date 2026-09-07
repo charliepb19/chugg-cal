@@ -144,7 +144,10 @@ function expandRecurring(
   return out.length ? out : [{ title, dueDate: null, notes, type, weight, recurring: true }];
 }
 
-async function callGateway(messages: unknown[]): Promise<ExtractedAssignment[]> {
+async function callGateway(
+  messages: unknown[],
+  opts: { inferYear?: number | null; unreadableMessage?: string } = {},
+): Promise<ExtractedAssignment[]> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured for this project.");
 
