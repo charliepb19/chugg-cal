@@ -194,8 +194,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         />
         <DropCard
           icon={ImageUp}
-          title="Upload assignment screenshot"
-          body="A screenshot from D2L, Canvas or Blackboard works."
+          title="Import from screenshot"
+          body="D2L, Canvas or Blackboard assignment list — PNG, JPG or HEIC."
           busy={busy === "image"}
           onPick={() => imgRef.current?.click()}
           onDrop={(f) => handleFile(f, "image")}
