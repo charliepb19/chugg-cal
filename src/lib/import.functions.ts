@@ -250,21 +250,41 @@ export const extractAssignments = createServerFn({ method: "POST" })
     const today = new Date().toISOString().slice(0, 10);
 
     if (data.kind === "image") {
-      return {
-        assignments: await callGateway([
-          { role: "system", content: SYSTEM_PROMPT },
+      const lowQuality =
+        "We couldn't read any assignments in that screenshot. Try cropping it closer to the assignment list, or take a clearer, full-size screenshot.";
+
+      const semester = (data.semester ?? "").trim();
+      const yearMatch = semester.match(/(20\d{2})/);
+      const inferYear = yearMatch ? Number(yearMatch[1]) : null;
+      const semesterMonth = /fall|autumn/i.test(semester)
+        ? 9
+        : /summer/i.test(semester)
+          ? 5
+          : /winter|spring/i.test(semester)
+            ? 1
+            : null;
+
+      const assignments = await callGateway(
+        [
+          { role: "system", content: IMAGE_SYSTEM_PROMPT },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Today is ${today}. This screenshot shows a course assignment list. Extract every deadline.`,
+                text: `Today is ${today}.${
+                  semester ? ` This course runs in ${semester}.` : ""
+                } This screenshot shows a course assignment list from a school LMS. Read every row and return only real due dates.`,
               },
               { type: "image_url", image_url: { url: data.dataUrl } },
             ],
           },
-        ]),
-      };
+        ],
+        { inferYear, semesterMonth, unreadableMessage: lowQuality },
+      );
+
+      if (!assignments.length) throw new Error(lowQuality);
+      return { assignments };
     }
 
     const base64 = data.dataUrl.split(",")[1] ?? "";
