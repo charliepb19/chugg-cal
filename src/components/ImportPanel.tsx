@@ -165,7 +165,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                   </span>
                 )}
                 {row.yearUnconfirmed && (
-                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                  <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
                     check year
                   </span>
                 )}
