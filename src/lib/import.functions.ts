@@ -7,6 +7,8 @@ const inputSchema = z.object({
   /** data URL: data:<mime>;base64,<payload> */
   dataUrl: z.string().min(10),
   filename: z.string().optional(),
+  /** free text like "Fall 2026", used to infer a missing year */
+  semester: z.string().max(100).optional(),
 });
 
 export type AssignmentType = "assignment" | "exam" | "quiz" | "reading";
@@ -18,6 +20,8 @@ export type ExtractedAssignment = {
   type: AssignmentType;
   weight: string;
   recurring: boolean;
+  /** true when the year had to be guessed and the student should double-check it */
+  yearUnconfirmed?: boolean;
 };
 
 type RawItem = {
@@ -27,6 +31,7 @@ type RawItem = {
   type?: unknown;
   weight?: unknown;
   notes?: unknown;
+  yearVisible?: unknown;
   recurring?: unknown;
   recurrence?: {
     weekday?: unknown;
@@ -62,6 +67,32 @@ Rules:
 - If a date has no year, infer it from surrounding context, otherwise use the current year.
 - notes may hold chapter or submission detail, under 120 characters.
 Return only JSON.`;
+
+const IMAGE_SYSTEM_PROMPT = `You read a screenshot of a course assignment list from a school LMS (D2L/Brightspace, Canvas, Blackboard, Moodle) and turn it into a student calendar.
+Return STRICT JSON of the form:
+{
+  "readable": true | false,
+  "items": [
+    {
+      "title": "string",
+      "date": "YYYY-MM-DD or null",
+      "yearVisible": true | false,
+      "type": "assignment" | "exam" | "quiz" | "reading",
+      "weight": "string, e.g. 20% or empty string",
+      "notes": "short string or empty string"
+    }
+  ]
+}
+Rules:
+- Layouts vary a lot: columns can appear in any order, and dates may be "Oct 3", "10/3", "3 Oct 2026", "Due Friday, October 3 at 11:59 PM", or inside a "Due" column header.
+- Only the DUE date belongs in "date". LMS rows often show several dates: "Available from", "Available until", "Opens", "Starts", "Posted", "Unlocks", "Last updated", "Availability window". Never use those as the due date. If a row shows an availability window and a due date, take only the due date. If a row shows no due date at all, set date to null and mention the other date in notes (e.g. "opens Oct 1").
+- "yearVisible" is true only when the year is actually printed on screen for that row. When only month/day is shown, set yearVisible false and still give your best-guess year in "date".
+- Infer type from wording: "Quiz"/"Test bank" -> quiz, "Exam"/"Midterm"/"Final" -> exam, "Read"/"Chapter"/"Reading" -> reading, otherwise assignment.
+- Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
+- Skip navigation, folders, headers, announcements, grade totals and anything without an assignment name.
+- Set "readable" to false and return an empty items array when the image is too blurry, cropped or dark to read, or shows no assignment list.
+Return only JSON.`;
+
 
 const WEEKDAYS = [
   "sunday",
@@ -113,7 +144,15 @@ function expandRecurring(
   return out.length ? out : [{ title, dueDate: null, notes, type, weight, recurring: true }];
 }
 
-async function callGateway(messages: unknown[]): Promise<ExtractedAssignment[]> {
+async function callGateway(
+  messages: unknown[],
+  opts: {
+    inferYear?: number | null;
+    /** first month of the term (1-12), used to roll Jan-Apr dates into the next year */
+    semesterMonth?: number | null;
+    unreadableMessage?: string;
+  } = {},
+): Promise<ExtractedAssignment[]> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured for this project.");
 
@@ -139,12 +178,23 @@ async function callGateway(messages: unknown[]): Promise<ExtractedAssignment[]> 
   const content = json.choices?.[0]?.message?.content ?? "{}";
   const cleaned = content.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
 
-  let parsed: { items?: RawItem[]; assignments?: RawItem[]; semesterStart?: unknown; semesterEnd?: unknown };
+  let parsed: {
+    items?: RawItem[];
+    assignments?: RawItem[];
+    semesterStart?: unknown;
+    semesterEnd?: unknown;
+    readable?: unknown;
+  };
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Could not read assignments from that file.");
+    throw new Error(opts.unreadableMessage ?? "Could not read assignments from that file.");
   }
+
+  if (parsed.readable === false && opts.unreadableMessage) {
+    throw new Error(opts.unreadableMessage);
+  }
+
 
   const semesterStart = isDate(parsed.semesterStart) ? parsed.semesterStart : null;
   const semesterEnd = isDate(parsed.semesterEnd) ? parsed.semesterEnd : null;
@@ -168,8 +218,26 @@ async function callGateway(messages: unknown[]): Promise<ExtractedAssignment[]> 
       continue;
     }
 
-    const date = isDate(item.date) ? item.date : isDate(item.dueDate) ? item.dueDate : null;
-    out.push({ title, dueDate: date, notes, type, weight, recurring: false });
+    let date = isDate(item.date) ? item.date : isDate(item.dueDate) ? item.dueDate : null;
+    let yearUnconfirmed = false;
+
+    if (date && item.yearVisible === false) {
+      if (opts.inferYear) {
+        // The screenshot showed only month/day — anchor it to the course's own year.
+        const monthDay = date.slice(5);
+        const month = Number(date.slice(5, 7));
+        // Fall terms run into January; a January-April date belongs to the next year.
+        const year =
+          opts.inferYear && month <= 4 && (opts.semesterMonth ?? 0) >= 8
+            ? opts.inferYear + 1
+            : opts.inferYear;
+        date = `${year}-${monthDay}`;
+      } else {
+        yearUnconfirmed = true;
+      }
+    }
+
+    out.push({ title, dueDate: date, notes, type, weight, recurring: false, yearUnconfirmed });
   }
 
   return out.sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
@@ -182,21 +250,41 @@ export const extractAssignments = createServerFn({ method: "POST" })
     const today = new Date().toISOString().slice(0, 10);
 
     if (data.kind === "image") {
-      return {
-        assignments: await callGateway([
-          { role: "system", content: SYSTEM_PROMPT },
+      const lowQuality =
+        "We couldn't read any assignments in that screenshot. Try cropping it closer to the assignment list, or take a clearer, full-size screenshot.";
+
+      const semester = (data.semester ?? "").trim();
+      const yearMatch = semester.match(/(20\d{2})/);
+      const inferYear = yearMatch ? Number(yearMatch[1]) : null;
+      const semesterMonth = /fall|autumn/i.test(semester)
+        ? 9
+        : /summer/i.test(semester)
+          ? 5
+          : /winter|spring/i.test(semester)
+            ? 1
+            : null;
+
+      const assignments = await callGateway(
+        [
+          { role: "system", content: IMAGE_SYSTEM_PROMPT },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Today is ${today}. This screenshot shows a course assignment list. Extract every deadline.`,
+                text: `Today is ${today}.${
+                  semester ? ` This course runs in ${semester}.` : ""
+                } This screenshot shows a course assignment list from a school LMS. Read every row and return only real due dates.`,
               },
               { type: "image_url", image_url: { url: data.dataUrl } },
             ],
           },
-        ]),
-      };
+        ],
+        { inferYear, semesterMonth, unreadableMessage: lowQuality },
+      );
+
+      if (!assignments.length) throw new Error(lowQuality);
+      return { assignments };
     }
 
     const base64 = data.dataUrl.split(",")[1] ?? "";

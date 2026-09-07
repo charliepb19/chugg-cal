@@ -12,7 +12,23 @@ import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 
 type Row = ExtractedAssignment & { include: boolean };
 
-export function ImportPanel({ courseId }: { courseId: string }) {
+const HEIC_RE = /\.(heic|heif)$/i;
+
+async function toUploadableFile(file: File): Promise<File> {
+  const isHeic = HEIC_RE.test(file.name) || /heic|heif/i.test(file.type);
+  if (!isHeic) return file;
+  try {
+    const { heicTo } = await import("heic-to");
+    const blob = await heicTo({ blob: file, type: "image/jpeg", quality: 0.9 });
+    return new File([blob], file.name.replace(HEIC_RE, ".jpg"), { type: "image/jpeg" });
+  } catch {
+    throw new Error(
+      "We couldn't open that iPhone photo. Save the screenshot as JPG or PNG and try again.",
+    );
+  }
+}
+
+export function ImportPanel({ courseId, semester = "" }: { courseId: string; semester?: string }) {
   const extract = useServerFn(extractAssignments);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLInputElement>(null);
@@ -22,9 +38,10 @@ export function ImportPanel({ courseId }: { courseId: string }) {
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
 
-  async function handleFile(file: File, kind: "pdf" | "image") {
+  async function handleFile(input: File, kind: "pdf" | "image") {
     setBusy(kind);
     try {
+      const file = kind === "image" ? await toUploadableFile(input) : input;
       const dataUrl: string = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
@@ -32,14 +49,25 @@ export function ImportPanel({ courseId }: { courseId: string }) {
         reader.readAsDataURL(file);
       });
 
-      const result = await extract({ data: { kind, dataUrl, filename: file.name } });
+      const result = await extract({
+        data: { kind, dataUrl, filename: file.name, semester },
+      });
       if (!result.assignments.length) {
-        toast.error("No assignments found in that file. Try the other import method.");
+        toast.error(
+          kind === "image"
+            ? "We couldn't read any assignments in that screenshot. Crop closer to the assignment list, or upload a clearer one."
+            : "No assignments found in that file. Try the other import method.",
+        );
         return;
       }
       setImportKind(kind);
       setRows(result.assignments.map((a) => ({ ...a, include: true })));
-      toast.success(`Found ${result.assignments.length} assignments — review and save.`);
+      const unsure = result.assignments.filter((a) => a.yearUnconfirmed).length;
+      toast.success(
+        unsure
+          ? `Found ${result.assignments.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
+          : `Found ${result.assignments.length} assignments — review and save.`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
     } finally {
@@ -136,6 +164,11 @@ export function ImportPanel({ courseId }: { courseId: string }) {
                     repeating
                   </span>
                 )}
+                {row.yearUnconfirmed && (
+                  <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
+                    check year
+                  </span>
+                )}
               </div>
             );
           })}
@@ -161,8 +194,8 @@ export function ImportPanel({ courseId }: { courseId: string }) {
         />
         <DropCard
           icon={ImageUp}
-          title="Upload assignment screenshot"
-          body="A screenshot from D2L, Canvas or Blackboard works."
+          title="Import from screenshot"
+          body="D2L, Canvas or Blackboard assignment list — PNG, JPG or HEIC."
           busy={busy === "image"}
           onPick={() => imgRef.current?.click()}
           onDrop={(f) => handleFile(f, "image")}
@@ -183,7 +216,7 @@ export function ImportPanel({ courseId }: { courseId: string }) {
       <input
         ref={imgRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif,image/*"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
