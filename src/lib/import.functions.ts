@@ -146,7 +146,12 @@ function expandRecurring(
 
 async function callGateway(
   messages: unknown[],
-  opts: { inferYear?: number | null; unreadableMessage?: string } = {},
+  opts: {
+    inferYear?: number | null;
+    /** first month of the term (1-12), used to roll Jan-Apr dates into the next year */
+    semesterMonth?: number | null;
+    unreadableMessage?: string;
+  } = {},
 ): Promise<ExtractedAssignment[]> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured for this project.");
