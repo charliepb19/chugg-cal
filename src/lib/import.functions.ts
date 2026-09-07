@@ -68,6 +68,32 @@ Rules:
 - notes may hold chapter or submission detail, under 120 characters.
 Return only JSON.`;
 
+const IMAGE_SYSTEM_PROMPT = `You read a screenshot of a course assignment list from a school LMS (D2L/Brightspace, Canvas, Blackboard, Moodle) and turn it into a student calendar.
+Return STRICT JSON of the form:
+{
+  "readable": true | false,
+  "items": [
+    {
+      "title": "string",
+      "date": "YYYY-MM-DD or null",
+      "yearVisible": true | false,
+      "type": "assignment" | "exam" | "quiz" | "reading",
+      "weight": "string, e.g. 20% or empty string",
+      "notes": "short string or empty string"
+    }
+  ]
+}
+Rules:
+- Layouts vary a lot: columns can appear in any order, and dates may be "Oct 3", "10/3", "3 Oct 2026", "Due Friday, October 3 at 11:59 PM", or inside a "Due" column header.
+- Only the DUE date belongs in "date". LMS rows often show several dates: "Available from", "Available until", "Opens", "Starts", "Posted", "Unlocks", "Last updated", "Availability window". Never use those as the due date. If a row shows an availability window and a due date, take only the due date. If a row shows no due date at all, set date to null and mention the other date in notes (e.g. "opens Oct 1").
+- "yearVisible" is true only when the year is actually printed on screen for that row. When only month/day is shown, set yearVisible false and still give your best-guess year in "date".
+- Infer type from wording: "Quiz"/"Test bank" -> quiz, "Exam"/"Midterm"/"Final" -> exam, "Read"/"Chapter"/"Reading" -> reading, otherwise assignment.
+- Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
+- Skip navigation, folders, headers, announcements, grade totals and anything without an assignment name.
+- Set "readable" to false and return an empty items array when the image is too blurry, cropped or dark to read, or shows no assignment list.
+Return only JSON.`;
+
+
 const WEEKDAYS = [
   "sunday",
   "monday",
