@@ -42,6 +42,7 @@ export function ManualAssignmentDialog({
         notes,
         due_date: dueDate ? new Date(`${dueDate}T23:59:00`).toISOString() : null,
         source: "manual",
+        confirmed: true,
       });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });

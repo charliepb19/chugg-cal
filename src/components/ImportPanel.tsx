@@ -19,6 +19,7 @@ export function ImportPanel({ courseId }: { courseId: string }) {
   const imgRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<null | "pdf" | "image">(null);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
 
   async function handleFile(file: File, kind: "pdf" | "image") {
@@ -36,6 +37,7 @@ export function ImportPanel({ courseId }: { courseId: string }) {
         toast.error("No assignments found in that file. Try the other import method.");
         return;
       }
+      setImportKind(kind);
       setRows(result.assignments.map((a) => ({ ...a, include: true })));
       toast.success(`Found ${result.assignments.length} assignments — review and save.`);
     } catch (err) {
@@ -61,7 +63,8 @@ export function ImportPanel({ courseId }: { courseId: string }) {
           title: r.title,
           notes: r.notes,
           due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
-          source: "import",
+          source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
+          confirmed: true,
         })),
       );
       if (error) throw error;
