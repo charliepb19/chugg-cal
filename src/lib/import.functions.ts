@@ -20,6 +20,8 @@ export type ExtractedAssignment = {
   type: AssignmentType;
   weight: string;
   recurring: boolean;
+  /** true when the year had to be guessed and the student should double-check it */
+  yearUnconfirmed?: boolean;
 };
 
 type RawItem = {
