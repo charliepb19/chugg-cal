@@ -17,6 +17,7 @@ export type Database = {
       assignments: {
         Row: {
           completed: boolean
+          confirmed: boolean
           course_id: string
           created_at: string
           due_date: string | null
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           completed?: boolean
+          confirmed?: boolean
           course_id: string
           created_at?: string
           due_date?: string | null
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           completed?: boolean
+          confirmed?: boolean
           course_id?: string
           created_at?: string
           due_date?: string | null
