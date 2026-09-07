@@ -7,6 +7,8 @@ const inputSchema = z.object({
   /** data URL: data:<mime>;base64,<payload> */
   dataUrl: z.string().min(10),
   filename: z.string().optional(),
+  /** free text like "Fall 2026", used to infer a missing year */
+  semester: z.string().max(100).optional(),
 });
 
 export type AssignmentType = "assignment" | "exam" | "quiz" | "reading";
