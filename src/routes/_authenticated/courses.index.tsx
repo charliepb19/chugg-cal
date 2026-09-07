@@ -57,7 +57,7 @@ function CoursesPage() {
         user_id: userId,
         name,
         semester,
-        color: COURSE_COLORS[courses.length % COURSE_COLORS.length],
+        color: COURSE_COLORS[courses.length % COURSE_COLORS.length] ?? "#2563eb",
       });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["courses"] });
