@@ -88,7 +88,7 @@ function CourseDetail() {
         <p className="mb-4 mt-1 text-sm text-muted-foreground">
           Drop in a file — ChuggCal reads the due dates so you don't have to type them.
         </p>
-        <ImportPanel courseId={courseId} />
+        <ImportPanel courseId={courseId} semester={course?.semester ?? ""} />
       </section>
 
       <section className="mt-10">
