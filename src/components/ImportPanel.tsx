@@ -38,9 +38,10 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
 
-  async function handleFile(file: File, kind: "pdf" | "image") {
+  async function handleFile(input: File, kind: "pdf" | "image") {
     setBusy(kind);
     try {
+      const file = kind === "image" ? await toUploadableFile(input) : input;
       const dataUrl: string = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
@@ -48,14 +49,25 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         reader.readAsDataURL(file);
       });
 
-      const result = await extract({ data: { kind, dataUrl, filename: file.name } });
+      const result = await extract({
+        data: { kind, dataUrl, filename: file.name, semester },
+      });
       if (!result.assignments.length) {
-        toast.error("No assignments found in that file. Try the other import method.");
+        toast.error(
+          kind === "image"
+            ? "We couldn't read any assignments in that screenshot. Crop closer to the assignment list, or upload a clearer one."
+            : "No assignments found in that file. Try the other import method.",
+        );
         return;
       }
       setImportKind(kind);
       setRows(result.assignments.map((a) => ({ ...a, include: true })));
-      toast.success(`Found ${result.assignments.length} assignments — review and save.`);
+      const unsure = result.assignments.filter((a) => a.yearUnconfirmed).length;
+      toast.success(
+        unsure
+          ? `Found ${result.assignments.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
+          : `Found ${result.assignments.length} assignments — review and save.`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
     } finally {
