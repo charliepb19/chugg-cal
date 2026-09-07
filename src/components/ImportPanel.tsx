@@ -12,7 +12,23 @@ import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 
 type Row = ExtractedAssignment & { include: boolean };
 
-export function ImportPanel({ courseId }: { courseId: string }) {
+const HEIC_RE = /\.(heic|heif)$/i;
+
+async function toUploadableFile(file: File): Promise<File> {
+  const isHeic = HEIC_RE.test(file.name) || /heic|heif/i.test(file.type);
+  if (!isHeic) return file;
+  try {
+    const { heicTo } = await import("heic-to");
+    const blob = await heicTo({ blob: file, type: "image/jpeg", quality: 0.9 });
+    return new File([blob], file.name.replace(HEIC_RE, ".jpg"), { type: "image/jpeg" });
+  } catch {
+    throw new Error(
+      "We couldn't open that iPhone photo. Save the screenshot as JPG or PNG and try again.",
+    );
+  }
+}
+
+export function ImportPanel({ courseId, semester = "" }: { courseId: string; semester?: string }) {
   const extract = useServerFn(extractAssignments);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLInputElement>(null);
