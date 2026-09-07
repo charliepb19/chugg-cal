@@ -65,6 +65,8 @@ export function ImportPanel({ courseId }: { courseId: string }) {
           due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
           source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
           confirmed: true,
+          type: r.type,
+          weight: r.weight,
         })),
       );
       if (error) throw error;
