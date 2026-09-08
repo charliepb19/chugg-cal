@@ -86,16 +86,20 @@ Rules:
 - If something repeats (e.g. "quiz every Friday", "weekly reading response"), set recurring to true and fill recurrence with the weekday, the range it runs over, and how many weeks between occurrences (1 for weekly, 2 for biweekly). Leave date null for those.
 - Use semesterStart/semesterEnd from the syllabus term dates when present; they bound recurring items when the recurrence has no range.
 - Do not invent items. Skip office hours, policies and grading scales.
+- A row of the grading breakdown (e.g. "End of chapter quizzes - 15%", "Participation 5%") is NOT an item. It belongs only in gradingCategories. Never put a category row in "items" unless the schedule gives it its own specific date or an explicit recurrence.
 - Titles must be short and human readable ("Problem Set 3", "Midterm Exam").
 - If a date has no year, infer it from surrounding context, otherwise use the current year.
 - notes may hold chapter or submission detail, under 120 characters.
 Return only JSON.`;
 
 
-const IMAGE_SYSTEM_PROMPT = `You read a screenshot of a course assignment list from a school LMS (D2L/Brightspace, Canvas, Blackboard, Moodle) and turn it into a student calendar.
+const IMAGE_SYSTEM_PROMPT = `You read a screenshot from a school course site (D2L/Brightspace, Canvas, Blackboard, Moodle) or syllabus and turn it into a student calendar.
 Return STRICT JSON of the form:
 {
   "readable": true | false,
+  "gradingCategories": [
+    { "name": "string, e.g. End of chapter quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+  ],
   "items": [
     {
       "title": "string",
@@ -116,8 +120,10 @@ Rules:
 - "yearVisible" is true only when the year is actually printed on screen for that row. When only month/day is shown, set yearVisible false and still give your best-guess year in "date".
 - Infer type from wording: "Quiz"/"Test bank" -> quiz, "Exam"/"Midterm"/"Final" -> exam, "Read"/"Chapter"/"Reading" -> reading, otherwise assignment.
 - Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
+- Some screenshots are a grading breakdown / weight table instead of a list of dated work (e.g. "End of chapter quizzes 15%", "Midterm 25%"). Put those rows ONLY in gradingCategories with the percentage, and return an empty items array for that image. Never turn a grading category into a dateless assignment.
+- gradingCategories is an empty array when the screenshot shows no weight table.
 - Skip navigation, folders, headers, announcements, grade totals and anything without an assignment name.
-- Set "readable" to false and return an empty items array when the image is too blurry, cropped or dark to read, or shows no assignment list.
+- Set "readable" to false only when the image is too blurry, cropped or dark to read, or shows neither an assignment list nor a grading breakdown.
 Return only JSON.`;
 
 
@@ -228,6 +234,25 @@ async function callGateway(
   const semesterEnd = isDate(parsed.semesterEnd) ? parsed.semesterEnd : null;
   const raw = parsed.items ?? parsed.assignments ?? [];
 
+  const categories: ExtractedCategory[] = [];
+  for (const c of parsed.gradingCategories ?? []) {
+    const name = typeof c?.name === "string" ? c.name.trim().slice(0, 80) : "";
+    const rawPercent = typeof c?.percent === "number" ? c.percent : Number(c?.percent ?? c?.weight);
+    if (!name || !Number.isFinite(rawPercent)) continue;
+    const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
+    if (percent <= 0) continue;
+    const expected = Number(c?.expectedCount);
+    categories.push({
+      name,
+      percent,
+      expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
+      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
+    });
+  }
+
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const categoryNames = new Set(categories.map((c) => norm(c.name)));
+
   const out: ExtractedAssignment[] = [];
   for (const item of raw) {
     const title = typeof item?.title === "string" ? item.title.trim().slice(0, 200) : "";
@@ -249,6 +274,26 @@ async function callGateway(
     let date = isDate(item.date) ? item.date : isDate(item.dueDate) ? item.dueDate : null;
     let yearUnconfirmed = false;
 
+    // A dateless row that is really a grading-policy line ("End of chapter quizzes — 15%")
+    // belongs in the grading breakdown, not on the calendar.
+    if (!date) {
+      const n = norm(title);
+      if (categoryNames.has(n)) continue;
+      const inlinePercent = title.match(/(\d+(?:\.\d+)?)\s*%/);
+      if (inlinePercent || /^\s*\d+(\.\d+)?\s*%/.test(weight)) {
+        const percentText = inlinePercent?.[1] ?? weight.match(/(\d+(?:\.\d+)?)/)?.[1];
+        const percent = Number(percentText);
+        if (Number.isFinite(percent) && percent > 0) {
+          const cleanName = title.replace(/[-–—:]?\s*\d+(\.\d+)?\s*%.*$/, "").trim() || title;
+          if (!categoryNames.has(norm(cleanName))) {
+            categoryNames.add(norm(cleanName));
+            categories.push({ name: cleanName, percent, expectedCount: null, note: "" });
+          }
+          continue;
+        }
+      }
+    }
+
     if (date && item.yearVisible === false) {
       if (opts.inferYear) {
         // The screenshot showed only month/day — anchor it to the course's own year.
@@ -266,22 +311,6 @@ async function callGateway(
     }
 
     out.push({ title, dueDate: date, notes, type, weight, recurring: false, yearUnconfirmed });
-  }
-
-  const categories: ExtractedCategory[] = [];
-  for (const c of parsed.gradingCategories ?? []) {
-    const name = typeof c?.name === "string" ? c.name.trim().slice(0, 80) : "";
-    const rawPercent = typeof c?.percent === "number" ? c.percent : Number(c?.percent ?? c?.weight);
-    if (!name || !Number.isFinite(rawPercent)) continue;
-    const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
-    if (percent <= 0) continue;
-    const expected = Number(c?.expectedCount);
-    categories.push({
-      name,
-      percent,
-      expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
-      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
-    });
   }
 
   return {
@@ -311,7 +340,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
             ? 1
             : null;
 
-      const { assignments } = await callGateway(
+      const { assignments, categories } = await callGateway(
         [
           { role: "system", content: IMAGE_SYSTEM_PROMPT },
           {
@@ -321,7 +350,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
                 type: "text",
                 text: `Today is ${today}.${
                   semester ? ` This course runs in ${semester}.` : ""
-                } This screenshot shows a course assignment list from a school LMS. Read every row. Use the due date when one is shown; when a row (often a quiz) only shows "Availability ends" / "Available until" / "Closes", use that closing date as the due date.`,
+                } This screenshot shows either a course assignment list from a school LMS or a grading breakdown table. Read every row. Use the due date when one is shown; when a row (often a quiz) only shows "Availability ends" / "Available until" / "Closes", use that closing date as the due date. If a row is a grading weight (a category and a percentage, with no date), put it in gradingCategories, not in items.`,
               },
               { type: "image_url", image_url: { url: data.dataUrl } },
             ],
@@ -330,8 +359,8 @@ export const extractAssignments = createServerFn({ method: "POST" })
         { inferYear, semesterMonth, unreadableMessage: lowQuality },
       );
 
-      if (!assignments.length) throw new Error(lowQuality);
-      return { assignments, categories: [] as ExtractedCategory[] };
+      if (!assignments.length && !categories.length) throw new Error(lowQuality);
+      return { assignments, categories };
     }
 
     const base64 = data.dataUrl.split(",")[1] ?? "";

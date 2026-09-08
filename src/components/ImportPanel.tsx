@@ -11,11 +11,23 @@ import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
-import { categoryWarnings } from "@/lib/grade";
+import { categoryWarnings, weightsFromCategories } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean };
 type CatRow = CategoryRow & { expectedCount?: number | null };
+
+/** Only complete category rows count towards saving and auto-weighting. */
+function cleanCats(cats: CatRow[]) {
+  return cats
+    .filter((c) => c.name.trim() && typeof c.percent === "number")
+    .map((c) => ({
+      name: c.name.trim(),
+      percent: Number(c.percent),
+      expectedCount: c.expectedCount ?? null,
+      note: c.note,
+    }));
+}
 
 
 const HEIC_RE = /\.(heic|heif)$/i;
@@ -102,7 +114,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         }
       }
 
-      if (!found.length) {
+      if (!found.length && !detected.length) {
         toast.error(
           failures[0] ??
             (kind === "image"
@@ -130,11 +142,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       }
       const unsure = found.filter((a) => a.yearUnconfirmed).length;
       toast.success(
-        unsure
-          ? `Found ${found.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
-          : detected.length
-            ? `Found ${found.length} assignments and a grading breakdown — review and save.`
-            : `Found ${found.length} assignments — review and save.`,
+        !found.length
+          ? `Found a grading breakdown with ${detected.length} categor${detected.length === 1 ? "y" : "ies"} — review and save.`
+          : unsure
+            ? `Found ${found.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
+            : detected.length
+              ? `Found ${found.length} assignments and a grading breakdown — review and save.`
+              : `Found ${found.length} assignments — review and save.`,
       );
     } finally {
       setBusy(null);
@@ -146,30 +160,36 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
 
 
   async function save() {
-    const picked = (rows ?? []).filter((r) => r.include);
-    if (!picked.length) return;
+    const all = rows ?? [];
+    const auto = weightsFromCategories(all, cleanCats(cats));
+    const picked = all
+      .map((r, i) => ({ ...r, weight: r.weight?.trim() ? r.weight : (auto[i] ?? "") }))
+      .filter((r) => r.include);
+    const keep = cleanCats(cats);
+    if (!picked.length && !keep.length) return;
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("You are signed out");
 
-      const { error } = await supabase.from("assignments").insert(
-        picked.map((r) => ({
-          user_id: userId,
-          course_id: courseId,
-          title: r.title,
-          notes: r.notes,
-          due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
-          source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
-          confirmed: true,
-          type: r.type,
-          weight: r.weight,
-        })),
-      );
-      if (error) throw error;
+      if (picked.length) {
+        const { error } = await supabase.from("assignments").insert(
+          picked.map((r) => ({
+            user_id: userId,
+            course_id: courseId,
+            title: r.title,
+            notes: r.notes,
+            due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
+            source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
+            confirmed: true,
+            type: r.type,
+            weight: r.weight,
+          })),
+        );
+        if (error) throw error;
+      }
 
-      const keep = cats.filter((c) => c.name.trim() && typeof c.percent === "number");
       if (keep.length) {
         await supabase.from("grade_categories").delete().eq("course_id", courseId);
         const { error: catError } = await supabase.from("grade_categories").insert(
@@ -185,12 +205,30 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         await queryClient.invalidateQueries({ queryKey: ["grade_categories"] });
       }
 
+      // Spread the breakdown across assignments already on this course that have no weight yet.
+      let backfilled = 0;
+      if (keep.length) {
+        const { data: existing } = await supabase
+          .from("assignments")
+          .select("id,title,type,weight")
+          .eq("course_id", courseId);
+        const list = (existing ?? []) as { id: string; title: string; type: string; weight: string }[];
+        const weights = weightsFromCategories(list, keep);
+        for (const [i, a] of list.entries()) {
+          const next = weights[i] ?? "";
+          if (!a.weight?.trim() && next) {
+            await supabase.from("assignments").update({ weight: next }).eq("id", a.id);
+            backfilled += 1;
+          }
+        }
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setRows(null);
       setCats([]);
       toast.success(
         keep.length
-          ? `Added ${picked.length} assignments and ${keep.length} grading categories.`
+          ? `Added ${picked.length} assignment${picked.length === 1 ? "" : "s"} and ${keep.length} grading categories${backfilled ? `, weighting ${backfilled} of them automatically` : ""}.`
           : `Added ${picked.length} assignments.`,
       );
     } catch (err) {
@@ -202,6 +240,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
 
   if (rows) {
     const count = rows.filter((r) => r.include).length;
+    const readyCats = cleanCats(cats);
+    const autoWeights = weightsFromCategories(rows, readyCats);
     return (
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
@@ -240,8 +280,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                   <option value="reading">Reading</option>
                 </select>
                 <Input
-                  value={row.weight}
+                  value={row.weight?.trim() ? row.weight : (autoWeights[i] ?? "")}
                   placeholder="Weight"
+                  title={
+                    !row.weight?.trim() && autoWeights[i]
+                      ? "Worked out from the grading breakdown"
+                      : undefined
+                  }
                   onChange={(e) => update({ weight: e.target.value })}
                   className="h-9 w-24"
                 />
@@ -272,25 +317,23 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
               rows={cats}
               onChange={setCats}
               detected={catsDetected}
-              warnings={categoryWarnings(
-                cats
-                  .filter((c) => c.name.trim() && typeof c.percent === "number")
-                  .map((c) => ({
-                    name: c.name,
-                    percent: Number(c.percent),
-                    expectedCount: c.expectedCount,
-                    note: c.note,
-                  })),
-                rows.filter((r) => r.include),
-              )}
+              warnings={categoryWarnings(readyCats, rows.filter((r) => r.include))}
             />
+            {readyCats.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                These percentages are shared out across the matching work automatically, so you
+                don't have to weight each item yourself.
+              </p>
+            )}
           </div>
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button onClick={save} disabled={saving || count === 0}>
+          <Button onClick={save} disabled={saving || (count === 0 && readyCats.length === 0)}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add {count} assignment{count === 1 ? "" : "s"}
+            {count === 0
+              ? "Save grading breakdown"
+              : `Add ${count} assignment${count === 1 ? "" : "s"}`}
           </Button>
           <Button
             variant="outline"
