@@ -31,14 +31,17 @@ export function CategoryWeights({
   onChange,
   detected,
   warnings = [],
+  counts = {},
 }: {
   rows: CategoryRow[];
   onChange: (rows: CategoryRow[]) => void;
   /** true when these came out of the syllabus rather than being typed by hand */
   detected: boolean;
   warnings?: string[];
+  /** how many items sit in each category (lower-cased name), for the total */
+  counts?: Record<string, number>;
 }) {
-  const total = Math.round(weightTotal(rows) * 10) / 10;
+  const total = Math.round(weightTotal(rows, counts) * 10) / 10;
   const update = (i: number, patch: Partial<CategoryRow>) =>
     onChange(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
