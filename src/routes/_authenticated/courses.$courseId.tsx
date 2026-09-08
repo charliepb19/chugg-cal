@@ -6,7 +6,9 @@ import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { ImportPanel } from "@/components/ImportPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import { summarizeGrade, letterGrade, parseWeight } from "@/lib/grade";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({
@@ -39,9 +41,18 @@ function CourseDetail() {
 
   const course = courses.find((c) => c.id === courseId);
   const items = assignments.filter((a) => a.course_id === courseId);
+  const grade = summarizeGrade(items);
 
   async function toggle(id: string, completed: boolean) {
     await supabase.from("assignments").update({ completed }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["assignments"] });
+  }
+
+  async function setScore(id: string, raw: string) {
+    const trimmed = raw.trim();
+    const value = trimmed === "" ? null : Number(trimmed);
+    if (value !== null && (!Number.isFinite(value) || value < 0 || value > 100)) return;
+    await supabase.from("assignments").update({ score: value }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["assignments"] });
   }
 
@@ -83,6 +94,33 @@ function CourseDetail() {
         </Button>
       </div>
 
+      <section className="mt-6 rounded-xl border border-border bg-card p-4">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium">Grade so far</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {grade.gradedCount === 0
+                ? "Enter a mark next to any graded item and this updates itself."
+                : `Based on ${grade.gradedCount} graded item${grade.gradedCount === 1 ? "" : "s"} — ${Math.round(grade.gradedWeight)}% of the course.`}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-semibold tabular-nums">
+              {grade.current === null ? "—" : `${grade.current.toFixed(1)}%`}
+            </p>
+            {grade.current !== null && (
+              <p className="text-xs text-muted-foreground">{letterGrade(grade.current)}</p>
+            )}
+          </div>
+        </div>
+        {grade.weightedCount > 0 && grade.totalWeight < 99 && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Only {Math.round(grade.totalWeight)}% of the course has a weight on it, so add weights
+            to the rest for a full picture.
+          </p>
+        )}
+      </section>
+
       <section className="mt-8">
         <h2 className="text-sm font-medium">Add assignments</h2>
         <p className="mb-4 mt-1 text-sm text-muted-foreground">
@@ -112,6 +150,23 @@ function CourseDetail() {
                     {a.title}
                   </p>
                   {a.notes && <p className="truncate text-xs text-muted-foreground">{a.notes}</p>}
+                </div>
+                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
+                  {parseWeight(a.weight) !== null ? `${parseWeight(a.weight)}% of grade` : "No weight"}
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    defaultValue={a.score ?? ""}
+                    placeholder="—"
+                    aria-label={`Mark for ${a.title}`}
+                    className="h-8 w-20 text-right text-sm"
+                    onBlur={(e) => setScore(a.id, e.target.value)}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {a.due_date

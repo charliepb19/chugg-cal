@@ -23,6 +23,7 @@ export type Database = {
           due_date: string | null
           id: string
           notes: string
+          score: number | null
           source: string
           title: string
           type: string
@@ -37,6 +38,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           notes?: string
+          score?: number | null
           source?: string
           title: string
           type?: string
@@ -51,6 +53,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           notes?: string
+          score?: number | null
           source?: string
           title?: string
           type?: string
