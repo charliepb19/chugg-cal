@@ -18,22 +18,51 @@ const TYPE_WORDS: Record<string, string[]> = {
   reading: ["reading", "readings", "chapter"],
 };
 
+/** Does this extracted item plausibly belong to the named grading category? */
+export function matchesCategory(
+  categoryName: string,
+  item: { title: string; type: string },
+): boolean {
+  const name = categoryName.trim().toLowerCase();
+  if (!name) return false;
+  const type = Object.keys(TYPE_WORDS).find((t) => TYPE_WORDS[t]!.some((w) => name.includes(w)));
+  const stem = name.replace(/(es|s)$/, "");
+  return Boolean(
+    (type && item.type === type) ||
+      (stem.length > 2 && item.title.toLowerCase().includes(stem)),
+  );
+}
+
 /** How many of the extracted items plausibly belong to a grading category. */
 export function countForCategory(
   categoryName: string,
   items: { title: string; type: string }[],
 ): number {
-  const name = categoryName.trim().toLowerCase();
-  if (!name) return 0;
-  const type = Object.keys(TYPE_WORDS).find((t) =>
-    TYPE_WORDS[t]!.some((w) => name.includes(w)),
-  );
-  const stem = name.replace(/(es|s)$/, "");
-  return items.filter(
-    (i) =>
-      (type && i.type === type) ||
-      (stem.length > 2 && i.title.toLowerCase().includes(stem)),
-  ).length;
+  return items.filter((i) => matchesCategory(categoryName, i)).length;
+}
+
+/**
+ * Spread each grading category's percentage evenly across the real assignments
+ * that belong to it, so a student never types a weight the syllabus already stated.
+ * Existing weights are never overwritten.
+ */
+export function weightsFromCategories<T extends { title: string; type: string; weight: string }>(
+  items: T[],
+  categories: { name: string; percent: number; expectedCount?: number | null }[],
+): string[] {
+  const out = items.map((i) => i.weight ?? "");
+  for (const c of categories) {
+    if (!c.name.trim() || !c.percent) continue;
+    const idx = items
+      .map((item, i) => (matchesCategory(c.name, item) ? i : -1))
+      .filter((i) => i >= 0);
+    if (!idx.length) continue;
+    const count = Math.max(idx.length, c.expectedCount ?? 0);
+    const each = Math.round((c.percent / count) * 100) / 100;
+    if (each <= 0) continue;
+    for (const i of idx) if (!out[i]?.trim()) out[i] = `${each}%`;
+  }
+  return out;
 }
 
 /** Plain-language flags where the syllabus grading policy and the schedule disagree. */
