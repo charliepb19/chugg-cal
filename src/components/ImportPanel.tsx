@@ -148,28 +148,35 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
 
 
   async function save() {
-    const picked = (rows ?? []).filter((r) => r.include);
-    if (!picked.length) return;
+    const all = rows ?? [];
+    const auto = weightsFromCategories(all, cleanCats(cats));
+    const picked = all
+      .map((r, i) => ({ ...r, weight: r.weight?.trim() ? r.weight : (auto[i] ?? "") }))
+      .filter((r) => r.include);
+    const keep = cleanCats(cats);
+    if (!picked.length && !keep.length) return;
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("You are signed out");
 
-      const { error } = await supabase.from("assignments").insert(
-        picked.map((r) => ({
-          user_id: userId,
-          course_id: courseId,
-          title: r.title,
-          notes: r.notes,
-          due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
-          source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
-          confirmed: true,
-          type: r.type,
-          weight: r.weight,
-        })),
-      );
-      if (error) throw error;
+      if (picked.length) {
+        const { error } = await supabase.from("assignments").insert(
+          picked.map((r) => ({
+            user_id: userId,
+            course_id: courseId,
+            title: r.title,
+            notes: r.notes,
+            due_date: r.dueDate ? new Date(`${r.dueDate}T23:59:00`).toISOString() : null,
+            source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
+            confirmed: true,
+            type: r.type,
+            weight: r.weight,
+          })),
+        );
+        if (error) throw error;
+      }
 
       const keep = cats.filter((c) => c.name.trim() && typeof c.percent === "number");
       if (keep.length) {
