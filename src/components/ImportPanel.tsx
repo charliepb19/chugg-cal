@@ -287,10 +287,39 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           </div>
         )}
 
-        <Button className="mt-4" onClick={save} disabled={saving || count === 0}>
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          Add {count} assignment{count === 1 ? "" : "s"}
-        </Button>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button onClick={save} disabled={saving || count === 0}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Add {count} assignment{count === 1 ? "" : "s"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => imgRef.current?.click()}
+            disabled={busy !== null || saving}
+          >
+            {busy === "image" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ImageUp className="h-4 w-4" />
+            )}
+            {busy === "image" && progress
+              ? `Reading ${progress.done + 1} of ${progress.total}…`
+              : "Add more screenshots"}
+          </Button>
+        </div>
+
+        <input
+          ref={imgRef}
+          type="file"
+          multiple
+          accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif,image/*"
+          hidden
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? []);
+            e.target.value = "";
+            if (files.length) handleFiles(files, "image");
+          }}
+        />
       </div>
     );
   }
