@@ -308,11 +308,12 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         />
         <DropCard
           icon={ImageUp}
-          title="Import from screenshot"
-          body="D2L, Canvas or Blackboard assignment list — PNG, JPG or HEIC."
+          title="Import from screenshots"
+          body="D2L, Canvas or Blackboard assignment lists — add as many as you need. PNG, JPG or HEIC."
           busy={busy === "image"}
+          progress={progress}
           onPick={() => imgRef.current?.click()}
-          onDrop={(f) => handleFile(f, "image")}
+          onDrop={(files) => handleFiles(files, "image")}
         />
       </div>
 
@@ -330,12 +331,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       <input
         ref={imgRef}
         type="file"
+        multiple
         accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif,image/*"
         hidden
         onChange={(e) => {
-          const f = e.target.files?.[0];
+          const files = Array.from(e.target.files ?? []);
           e.target.value = "";
-          if (f) handleFile(f, "image");
+          if (files.length) handleFiles(files, "image");
         }}
       />
 
