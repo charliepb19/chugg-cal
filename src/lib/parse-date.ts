@@ -47,7 +47,7 @@ export function parseDueDateFromText(text: string, semester?: string): string | 
       /\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(20\d{2}))?\b/,
     ) ?? null;
   if (named) {
-    const m = MONTHS[named[1].toLowerCase()];
+    const m = MONTHS[String(named[1]).toLowerCase()];
     const d = Number(named[2]);
     if (m && d >= 1 && d <= 31) {
       const year = named[3] ? Number(named[3]) : inferYear(m, semester);
@@ -56,7 +56,7 @@ export function parseDueDateFromText(text: string, semester?: string): string | 
   }
   const dayFirst = s.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?(?:,?\s*(20\d{2}))?\b/);
   if (dayFirst) {
-    const m = MONTHS[dayFirst[2].toLowerCase()];
+    const m = MONTHS[String(dayFirst[2]).toLowerCase()];
     const d = Number(dayFirst[1]);
     if (m && d >= 1 && d <= 31) {
       const year = dayFirst[3] ? Number(dayFirst[3]) : inferYear(m, semester);
