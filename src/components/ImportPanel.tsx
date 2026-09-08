@@ -10,9 +10,13 @@ import { Loader2, FileUp, ImageUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
+import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
+import { categoryWarnings } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean };
+type CatRow = CategoryRow & { expectedCount?: number | null };
+
 
 const HEIC_RE = /\.(heic|heif)$/i;
 
