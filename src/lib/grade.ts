@@ -129,6 +129,7 @@ export function categoryWarnings(
     percent: number;
     expectedCount?: number | null | undefined;
     note?: string | undefined;
+    perItem?: boolean | undefined;
   }[],
   items: { title: string; type: string }[],
 ): string[] {
@@ -136,7 +137,7 @@ export function categoryWarnings(
   for (const c of categories) {
     if (!c.name.trim() || !c.percent) continue;
     const found = countForCategory(c.name, items);
-    const label = `${c.name} weight of ${c.percent}%`;
+    const label = `${c.name} weight of ${c.percent}%${c.perItem ? " each" : ""}`;
     if (found === 0) {
       out.push(`We found a ${label} but no matching dates — check if any are missing.`);
     } else if (c.expectedCount && found < c.expectedCount) {
