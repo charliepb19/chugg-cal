@@ -17,6 +17,16 @@ import { categoryWarnings, computeWeights, guessCategory } from "@/lib/grade";
 type Row = ExtractedAssignment & { include: boolean; category?: string };
 type CatRow = CategoryRow & { expectedCount?: number | null };
 
+/** How many review rows sit in each category, for the running total. */
+function catCounts(items: { category?: string }[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const i of items) {
+    const key = (i.category ?? "").trim().toLowerCase();
+    if (key) out[key] = (out[key] ?? 0) + 1;
+  }
+  return out;
+}
+
 /** Only complete category rows count towards saving and auto-weighting. */
 function cleanCats(cats: CatRow[]) {
   return cats
@@ -24,6 +34,7 @@ function cleanCats(cats: CatRow[]) {
     .map((c) => ({
       name: c.name.trim(),
       percent: Number(c.percent),
+      perItem: c.perItem ?? false,
       expectedCount: c.expectedCount ?? null,
       note: c.note,
     }));
@@ -94,6 +105,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                 name: c.name,
                 percent: c.percent,
                 note: c.note,
+                perItem: c.perItem,
                 expectedCount: c.expectedCount,
               });
             }
@@ -198,6 +210,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
             course_id: courseId,
             name: c.name.trim(),
             weight: Number(c.percent),
+            per_item: c.perItem ?? false,
             source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
           })),
         );
@@ -341,12 +354,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
               rows={cats}
               onChange={setCats}
               detected={catsDetected}
+              counts={catCounts(resolved.filter((r) => r.include))}
               warnings={categoryWarnings(readyCats, resolved.filter((r) => r.include))}
             />
             {readyCats.length > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
                 Each percentage is split evenly across the items in that category, so it updates
                 itself whenever you add more. Use the dropdown to move an item to another category.
+                Set a category to "each item" when every item is worth that much on its own — like
+                three exams at 20% each.
               </p>
             )}
           </div>
