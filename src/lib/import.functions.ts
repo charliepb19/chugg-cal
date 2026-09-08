@@ -24,6 +24,24 @@ export type ExtractedAssignment = {
   yearUnconfirmed?: boolean;
 };
 
+/** A grading breakdown row read out of the syllabus, e.g. "Quizzes: 15%". */
+export type ExtractedCategory = {
+  name: string;
+  percent: number;
+  /** how many items the syllabus implies for this category, when stated */
+  expectedCount: number | null;
+  note: string;
+};
+
+type RawCategory = {
+  name?: unknown;
+  percent?: unknown;
+  weight?: unknown;
+  expectedCount?: unknown;
+  note?: unknown;
+};
+
+
 type RawItem = {
   title?: unknown;
   date?: unknown;
