@@ -274,6 +274,26 @@ async function callGateway(
     let date = isDate(item.date) ? item.date : isDate(item.dueDate) ? item.dueDate : null;
     let yearUnconfirmed = false;
 
+    // A dateless row that is really a grading-policy line ("End of chapter quizzes — 15%")
+    // belongs in the grading breakdown, not on the calendar.
+    if (!date) {
+      const n = norm(title);
+      if (categoryNames.has(n)) continue;
+      const inlinePercent = title.match(/(\d+(?:\.\d+)?)\s*%/);
+      if (inlinePercent || /^\s*\d+(\.\d+)?\s*%/.test(weight)) {
+        const percentText = inlinePercent?.[1] ?? weight.match(/(\d+(?:\.\d+)?)/)?.[1];
+        const percent = Number(percentText);
+        if (Number.isFinite(percent) && percent > 0) {
+          const cleanName = title.replace(/[-–—:]?\s*\d+(\.\d+)?\s*%.*$/, "").trim() || title;
+          if (!categoryNames.has(norm(cleanName))) {
+            categoryNames.add(norm(cleanName));
+            categories.push({ name: cleanName, percent, expectedCount: null, note: "" });
+          }
+          continue;
+        }
+      }
+    }
+
     if (date && item.yearVisible === false) {
       if (opts.inferYear) {
         // The screenshot showed only month/day — anchor it to the course's own year.
