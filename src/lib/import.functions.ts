@@ -340,7 +340,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
             ? 1
             : null;
 
-      const { assignments } = await callGateway(
+      const { assignments, categories } = await callGateway(
         [
           { role: "system", content: IMAGE_SYSTEM_PROMPT },
           {
