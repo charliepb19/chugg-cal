@@ -354,13 +354,11 @@ export const extractAssignments = createServerFn({ method: "POST" })
       );
     }
 
-    return {
-      assignments: await callGateway([
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Today is ${today}. Extract every deadline from this syllabus:\n\n${syllabus}`,
-        },
-      ]),
-    };
+    return await callGateway([
+      { role: "system", content: SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `Today is ${today}. Extract every deadline and the grading breakdown from this syllabus:\n\n${syllabus}`,
+      },
+    ]);
   });
