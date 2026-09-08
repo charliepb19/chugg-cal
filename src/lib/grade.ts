@@ -41,6 +41,42 @@ export function countForCategory(
   return items.filter((i) => matchesCategory(categoryName, i)).length;
 }
 
+/** Best-guess grading category for an item, or "" when nothing matches. */
+export function guessCategory(
+  item: { title: string; type: string },
+  categories: { name: string }[],
+): string {
+  return categories.find((c) => matchesCategory(c.name, item))?.name ?? "";
+}
+
+type WeighedItem = { title: string; type: string; weight?: string; category?: string };
+type CatLike = { name: string; percent: number; expectedCount?: number | null };
+
+/**
+ * Effective percentage of the final grade for each item.
+ *
+ * A category's percentage is split evenly between every item put in that
+ * category, so adding another quiz automatically re-splits the quiz weight.
+ * A weight typed by hand on an item always wins.
+ */
+export function computeWeights(items: WeighedItem[], categories: CatLike[]): (number | null)[] {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const key = (item.category ?? "").trim().toLowerCase();
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return items.map((item) => {
+    const typed = parseWeight(item.weight ?? "");
+    if (typed !== null && typed > 0) return typed;
+    const key = (item.category ?? "").trim().toLowerCase();
+    if (!key) return null;
+    const cat = categories.find((c) => c.name.trim().toLowerCase() === key);
+    const count = counts.get(key) ?? 0;
+    if (!cat || !cat.percent || !count) return null;
+    return Math.round((cat.percent / count) * 100) / 100;
+  });
+}
+
 /**
  * Spread each grading category's percentage evenly across the real assignments
  * that belong to it, so a student never types a weight the syllabus already stated.
@@ -64,6 +100,7 @@ export function weightsFromCategories<T extends { title: string; type: string; w
   }
   return out;
 }
+
 
 /** Plain-language flags where the syllabus grading policy and the schedule disagree. */
 export function categoryWarnings(
