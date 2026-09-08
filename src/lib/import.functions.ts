@@ -299,7 +299,13 @@ async function callGateway(
           const cleanName = title.replace(/[-–—:]?\s*\d+(\.\d+)?\s*%.*$/, "").trim() || title;
           if (!categoryNames.has(norm(cleanName))) {
             categoryNames.add(norm(cleanName));
-            categories.push({ name: cleanName, percent, expectedCount: null, note: "" });
+            categories.push({
+              name: cleanName,
+              percent,
+              expectedCount: null,
+              note: "",
+              perItem: defaultPerItem(cleanName),
+            });
           }
           continue;
         }
