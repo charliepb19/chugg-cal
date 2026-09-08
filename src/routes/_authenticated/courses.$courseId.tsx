@@ -151,6 +151,23 @@ function CourseDetail() {
                   </p>
                   {a.notes && <p className="truncate text-xs text-muted-foreground">{a.notes}</p>}
                 </div>
+                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
+                  {parseWeight(a.weight) !== null ? `${parseWeight(a.weight)}% of grade` : "No weight"}
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    defaultValue={a.score ?? ""}
+                    placeholder="—"
+                    aria-label={`Mark for ${a.title}`}
+                    className="h-8 w-20 text-right text-sm"
+                    onBlur={(e) => setScore(a.id, e.target.value)}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {a.due_date
                     ? new Date(a.due_date).toLocaleDateString(undefined, {
