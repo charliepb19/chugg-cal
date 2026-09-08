@@ -358,6 +358,7 @@ function DropCard({
   title,
   body,
   busy,
+  progress,
   onPick,
   onDrop,
 }: {
@@ -365,8 +366,9 @@ function DropCard({
   title: string;
   body: string;
   busy: boolean;
+  progress?: { done: number; total: number } | null;
   onPick: () => void;
-  onDrop: (file: File) => void;
+  onDrop: (files: File[]) => void;
 }) {
   const [over, setOver] = useState(false);
   return (
@@ -381,8 +383,8 @@ function DropCard({
       onDrop={(e) => {
         e.preventDefault();
         setOver(false);
-        const f = e.dataTransfer.files?.[0];
-        if (f) onDrop(f);
+        const files = Array.from(e.dataTransfer.files ?? []);
+        if (files.length) onDrop(files);
       }}
       disabled={busy}
       className={`flex min-h-44 flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
@@ -394,7 +396,13 @@ function DropCard({
       ) : (
         <Icon className="h-6 w-6 text-muted-foreground" />
       )}
-      <span className="mt-3 text-sm font-medium">{busy ? "Reading your file…" : title}</span>
+      <span className="mt-3 text-sm font-medium">
+        {busy
+          ? progress
+            ? `Reading file ${progress.done + 1} of ${progress.total}…`
+            : "Reading your file…"
+          : title}
+      </span>
       <span className="mt-1 text-sm text-muted-foreground">
         {busy ? "This takes a few seconds." : body}
       </span>
