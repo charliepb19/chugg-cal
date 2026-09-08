@@ -41,9 +41,18 @@ function CourseDetail() {
 
   const course = courses.find((c) => c.id === courseId);
   const items = assignments.filter((a) => a.course_id === courseId);
+  const grade = summarizeGrade(items);
 
   async function toggle(id: string, completed: boolean) {
     await supabase.from("assignments").update({ completed }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["assignments"] });
+  }
+
+  async function setScore(id: string, raw: string) {
+    const trimmed = raw.trim();
+    const value = trimmed === "" ? null : Number(trimmed);
+    if (value !== null && (!Number.isFinite(value) || value < 0 || value > 100)) return;
+    await supabase.from("assignments").update({ score: value }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["assignments"] });
   }
 
@@ -84,6 +93,33 @@ function CourseDetail() {
           Delete course
         </Button>
       </div>
+
+      <section className="mt-6 rounded-xl border border-border bg-card p-4">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium">Grade so far</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {grade.gradedCount === 0
+                ? "Enter a mark next to any graded item and this updates itself."
+                : `Based on ${grade.gradedCount} graded item${grade.gradedCount === 1 ? "" : "s"} — ${Math.round(grade.gradedWeight)}% of the course.`}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-semibold tabular-nums">
+              {grade.current === null ? "—" : `${grade.current.toFixed(1)}%`}
+            </p>
+            {grade.current !== null && (
+              <p className="text-xs text-muted-foreground">{letterGrade(grade.current)}</p>
+            )}
+          </div>
+        </div>
+        {grade.weightedCount > 0 && grade.totalWeight < 99 && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Only {Math.round(grade.totalWeight)}% of the course has a weight on it, so add weights
+            to the rest for a full picture.
+          </p>
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-medium">Add assignments</h2>
