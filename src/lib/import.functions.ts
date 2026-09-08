@@ -103,7 +103,7 @@ Return STRICT JSON of the form:
 {
   "readable": true | false,
   "gradingCategories": [
-    { "name": "string, e.g. End of chapter quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+    { "name": "string, e.g. End of chapter quizzes", "percent": 15, "perItem": false, "expectedCount": 12 or null, "note": "short string or empty string" }
   ],
   "items": [
     {
