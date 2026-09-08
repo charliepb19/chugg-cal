@@ -31,6 +31,8 @@ export type ExtractedCategory = {
   /** how many items the syllabus implies for this category, when stated */
   expectedCount: number | null;
   note: string;
+  /** true when every item in the category is worth `percent` on its own */
+  perItem: boolean;
 };
 
 type RawCategory = {
@@ -39,6 +41,7 @@ type RawCategory = {
   weight?: unknown;
   expectedCount?: unknown;
   note?: unknown;
+  perItem?: unknown;
 };
 
 
