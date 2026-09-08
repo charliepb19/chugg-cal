@@ -102,7 +102,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         }
       }
 
-      if (!found.length) {
+      if (!found.length && !detected.length) {
         toast.error(
           failures[0] ??
             (kind === "image"
@@ -130,11 +130,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       }
       const unsure = found.filter((a) => a.yearUnconfirmed).length;
       toast.success(
-        unsure
-          ? `Found ${found.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
-          : detected.length
-            ? `Found ${found.length} assignments and a grading breakdown — review and save.`
-            : `Found ${found.length} assignments — review and save.`,
+        !found.length
+          ? `Found a grading breakdown with ${detected.length} categor${detected.length === 1 ? "y" : "ies"} — review and save.`
+          : unsure
+            ? `Found ${found.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
+            : detected.length
+              ? `Found ${found.length} assignments and a grading breakdown — review and save.`
+              : `Found ${found.length} assignments — review and save.`,
       );
     } finally {
       setBusy(null);
