@@ -47,7 +47,11 @@ function CourseDetail() {
   const items = assignments.filter((a) => a.course_id === courseId);
 
   const courseCats = categories.filter((c) => c.course_id === courseId);
-  const catWeights = courseCats.map((c) => ({ name: c.name, percent: c.weight }));
+  const catWeights = courseCats.map((c) => ({
+    name: c.name,
+    percent: c.weight,
+    perItem: c.per_item,
+  }));
   // An item with no category picked yet still falls into its best match.
   const effective = items.map((a) => ({
     ...a,
@@ -59,7 +63,7 @@ function CourseDetail() {
   const [catRows, setCatRows] = useState<CategoryRow[] | null>(null);
   const [savingCats, setSavingCats] = useState(false);
   const rows: CategoryRow[] =
-    catRows ?? courseCats.map((c) => ({ name: c.name, percent: c.weight }));
+    catRows ?? courseCats.map((c) => ({ name: c.name, percent: c.weight, perItem: c.per_item }));
 
   async function saveCategories() {
     setSavingCats(true);
@@ -76,6 +80,7 @@ function CourseDetail() {
             course_id: courseId,
             name: r.name.trim(),
             weight: Number(r.percent),
+            per_item: r.perItem ?? false,
             source: "manual",
           })),
         );
@@ -174,7 +179,16 @@ function CourseDetail() {
       </section>
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
-        <CategoryWeights rows={rows} onChange={setCatRows} detected={catsDetected} />
+        <CategoryWeights
+          rows={rows}
+          onChange={setCatRows}
+          detected={catsDetected}
+          counts={effective.reduce<Record<string, number>>((acc, a) => {
+            const key = (a.category ?? "").trim().toLowerCase();
+            if (key) acc[key] = (acc[key] ?? 0) + 1;
+            return acc;
+          }, {})}
+        />
         <Button size="sm" className="mt-3" onClick={saveCategories} disabled={savingCats}>
           Save breakdown
         </Button>
