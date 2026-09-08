@@ -123,7 +123,7 @@ Rules:
 - A bare "Available" label (without "ends"/"until"/"closes") points at the opening of the availability window — IGNORE it entirely. Do not put it in "date" and do not mention it in "notes".
 - Closing dates ARE due dates when no explicit "Due" date is shown: "Availability ends", "Available until", "Closes", "Ends", "Due by", or the end of an availability window (e.g. "Oct 1 - Oct 8" -> Oct 8). Quizzes on D2L usually show only "Availability ends" — use that as the due date and note it in "notes" (e.g. "availability ends").
 - If a row shows both an explicit due date and an availability window, use the explicit due date.
-- Only when a row has no due date and no closing date at all, set date to null and mention the other date in notes (e.g. "opens Oct 1").
+- Only when a row has no due date and no closing date at all, set date to null and leave notes empty — do not record opening/availability dates.
 - "yearVisible" is true only when the year is actually printed on screen for that row. When only month/day is shown, set yearVisible false and still give your best-guess year in "date".
 - Infer type from wording: "Quiz"/"Test bank" -> quiz, "Exam"/"Midterm"/"Final" -> exam, "Read"/"Chapter"/"Reading" -> reading, otherwise assignment.
 - Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
