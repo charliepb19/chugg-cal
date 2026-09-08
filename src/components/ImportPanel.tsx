@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, FileUp, ImageUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
+import { parseDueDateFromText } from "@/lib/parse-date";
+
 
 type Row = ExtractedAssignment & { include: boolean };
 
