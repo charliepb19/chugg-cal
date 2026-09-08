@@ -161,7 +161,7 @@ async function callGateway(
     semesterMonth?: number | null;
     unreadableMessage?: string;
   } = {},
-): Promise<ExtractedAssignment[]> {
+): Promise<{ assignments: ExtractedAssignment[]; categories: ExtractedCategory[] }> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured for this project.");
 
