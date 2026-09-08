@@ -127,6 +127,7 @@ Rules:
 - Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
 - Some screenshots are a grading breakdown / weight table instead of a list of dated work (e.g. "End of chapter quizzes 15%", "Midterm 25%"). Put those rows ONLY in gradingCategories with the percentage, and return an empty items array for that image. Never turn a grading category into a dateless assignment.
 - gradingCategories is an empty array when the screenshot shows no weight table.
+- perItem is true when the percentage applies to EACH item in that category instead of being shared ("Each exam 20%", or Exam 1/2/3 each listed at 20%). In that case return one category (e.g. "Exams") with percent 20, perItem true and expectedCount set to how many are listed. A single pooled figure ("Quizzes 15%") is perItem false.
 - Skip navigation, folders, headers, announcements, grade totals and anything without an assignment name.
 - Set "readable" to false only when the image is too blurry, cropped or dark to read, or shows neither an assignment list nor a grading breakdown.
 Return only JSON.`;
