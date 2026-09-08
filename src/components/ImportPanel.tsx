@@ -11,11 +11,23 @@ import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
-import { categoryWarnings } from "@/lib/grade";
+import { categoryWarnings, weightsFromCategories } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean };
 type CatRow = CategoryRow & { expectedCount?: number | null };
+
+/** Only complete category rows count towards saving and auto-weighting. */
+function cleanCats(cats: CatRow[]) {
+  return cats
+    .filter((c) => c.name.trim() && typeof c.percent === "number")
+    .map((c) => ({
+      name: c.name.trim(),
+      percent: Number(c.percent),
+      expectedCount: c.expectedCount ?? null,
+      note: c.note,
+    }));
+}
 
 
 const HEIC_RE = /\.(heic|heif)$/i;
