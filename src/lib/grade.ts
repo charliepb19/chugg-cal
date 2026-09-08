@@ -38,7 +38,12 @@ export function countForCategory(
 
 /** Plain-language flags where the syllabus grading policy and the schedule disagree. */
 export function categoryWarnings(
-  categories: { name: string; percent: number; expectedCount?: number | null; note?: string }[],
+  categories: {
+    name: string;
+    percent: number;
+    expectedCount?: number | null | undefined;
+    note?: string | undefined;
+  }[],
   items: { title: string; type: string }[],
 ): string[] {
   const out: string[] = [];
