@@ -190,6 +190,7 @@ async function callGateway(
   let parsed: {
     items?: RawItem[];
     assignments?: RawItem[];
+    gradingCategories?: RawCategory[];
     semesterStart?: unknown;
     semesterEnd?: unknown;
     readable?: unknown;
