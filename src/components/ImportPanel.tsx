@@ -317,25 +317,23 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
               rows={cats}
               onChange={setCats}
               detected={catsDetected}
-              warnings={categoryWarnings(
-                cats
-                  .filter((c) => c.name.trim() && typeof c.percent === "number")
-                  .map((c) => ({
-                    name: c.name,
-                    percent: Number(c.percent),
-                    expectedCount: c.expectedCount,
-                    note: c.note,
-                  })),
-                rows.filter((r) => r.include),
-              )}
+              warnings={categoryWarnings(readyCats, rows.filter((r) => r.include))}
             />
+            {readyCats.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                These percentages are shared out across the matching work automatically, so you
+                don't have to weight each item yourself.
+              </p>
+            )}
           </div>
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button onClick={save} disabled={saving || count === 0}>
+          <Button onClick={save} disabled={saving || (count === 0 && readyCats.length === 0)}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add {count} assignment{count === 1 ? "" : "s"}
+            {count === 0
+              ? "Save grading breakdown"
+              : `Add ${count} assignment${count === 1 ? "" : "s"}`}
           </Button>
           <Button
             variant="outline"
