@@ -40,68 +40,110 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   const pdfRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<null | "pdf" | "image">(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [cats, setCats] = useState<CatRow[]>([]);
   const [catsDetected, setCatsDetected] = useState(false);
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
 
-  async function handleFile(input: File, kind: "pdf" | "image") {
-    setBusy(kind);
-    try {
-      const file = kind === "image" ? await toUploadableFile(input) : input;
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("Could not read that file"));
-        reader.readAsDataURL(file);
-      });
+  const key = (r: { title: string; dueDate: string | null }) =>
+    `${r.title.trim().toLowerCase()}|${r.dueDate ?? ""}`;
 
-      const result = await extract({
-        data: { kind, dataUrl, filename: file.name, semester },
-      });
-      if (!result.assignments.length) {
+  async function handleFiles(input: File[], kind: "pdf" | "image") {
+    const files = input.slice(0, 10);
+    if (!files.length) return;
+    setBusy(kind);
+    setProgress(files.length > 1 ? { done: 0, total: files.length } : null);
+
+    const found: Row[] = [];
+    const detected: CatRow[] = [];
+    const failures: string[] = [];
+
+    try {
+      for (const [index, original] of files.entries()) {
+        setProgress(files.length > 1 ? { done: index, total: files.length } : null);
+        try {
+          const file = kind === "image" ? await toUploadableFile(original) : original;
+          const dataUrl: string = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("Could not read that file"));
+            reader.readAsDataURL(file);
+          });
+
+          const result = await extract({
+            data: { kind, dataUrl, filename: file.name, semester },
+          });
+
+          for (const c of result.categories ?? []) {
+            if (!detected.some((d) => d.name.toLowerCase() === c.name.toLowerCase())) {
+              detected.push({
+                name: c.name,
+                percent: c.percent,
+                note: c.note,
+                expectedCount: c.expectedCount,
+              });
+            }
+          }
+
+          for (const a of result.assignments) {
+            const row: Row = {
+              ...a,
+              // Anything the model left undated: recover the date from its own text.
+              dueDate: a.dueDate ?? parseDueDateFromText(`${a.title} ${a.notes}`, semester),
+              include: true,
+            };
+            // The same assignment can appear in two overlapping screenshots.
+            if (!found.some((f) => key(f) === key(row))) found.push(row);
+          }
+        } catch (err) {
+          failures.push(err instanceof Error ? err.message : `Couldn't read ${original.name}`);
+        }
+      }
+
+      if (!found.length) {
         toast.error(
-          kind === "image"
-            ? "We couldn't read any assignments in that screenshot. Crop closer to the assignment list, or upload a clearer one."
-            : "No assignments found in that file. Try the other import method.",
+          failures[0] ??
+            (kind === "image"
+              ? "We couldn't read any assignments in those screenshots. Crop closer to the assignment list, or upload clearer ones."
+              : "No assignments found in that file. Try the other import method."),
         );
         return;
       }
-      setImportKind(kind);
-      const detected = result.categories ?? [];
-      setCatsDetected(detected.length > 0);
-      setCats(
-        detected.map((c) => ({
-          name: c.name,
-          percent: c.percent,
-          note: c.note,
-          expectedCount: c.expectedCount,
-        })),
-      );
-      setRows(
-        result.assignments.map((a) => ({
-          ...a,
-          // Anything the model left undated: recover the date from its own text.
-          dueDate: a.dueDate ?? parseDueDateFromText(`${a.title} ${a.notes}`, semester),
-          include: true,
-        })),
-      );
 
-      const unsure = result.assignments.filter((a) => a.yearUnconfirmed).length;
+      setImportKind(kind);
+      if (detected.length) {
+        setCatsDetected(true);
+        setCats((prev) => (prev.length ? prev : detected));
+      }
+      setRows((prev) => {
+        const merged = [...(prev ?? [])];
+        for (const row of found) if (!merged.some((m) => key(m) === key(row))) merged.push(row);
+        return merged;
+      });
+
+      if (failures.length) {
+        toast.warning(
+          `Added what we could — ${failures.length} file${failures.length === 1 ? "" : "s"} couldn't be read.`,
+        );
+      }
+      const unsure = found.filter((a) => a.yearUnconfirmed).length;
       toast.success(
         unsure
-          ? `Found ${result.assignments.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
+          ? `Found ${found.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
           : detected.length
-            ? `Found ${result.assignments.length} assignments and a grading breakdown — review and save.`
-            : `Found ${result.assignments.length} assignments — review and save.`,
+            ? `Found ${found.length} assignments and a grading breakdown — review and save.`
+            : `Found ${found.length} assignments — review and save.`,
       );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Import failed");
     } finally {
       setBusy(null);
+      setProgress(null);
     }
   }
+
+  const handleFile = (file: File, kind: "pdf" | "image") => handleFiles([file], kind);
+
 
   async function save() {
     const picked = (rows ?? []).filter((r) => r.include);
