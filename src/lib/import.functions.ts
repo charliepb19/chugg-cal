@@ -311,7 +311,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
             ? 1
             : null;
 
-      const assignments = await callGateway(
+      const { assignments } = await callGateway(
         [
           { role: "system", content: IMAGE_SYSTEM_PROMPT },
           {
@@ -331,7 +331,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
       );
 
       if (!assignments.length) throw new Error(lowQuality);
-      return { assignments };
+      return { assignments, categories: [] as ExtractedCategory[] };
     }
 
     const base64 = data.dataUrl.split(",")[1] ?? "";
