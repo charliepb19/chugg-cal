@@ -86,6 +86,7 @@ Rules:
 - If something repeats (e.g. "quiz every Friday", "weekly reading response"), set recurring to true and fill recurrence with the weekday, the range it runs over, and how many weeks between occurrences (1 for weekly, 2 for biweekly). Leave date null for those.
 - Use semesterStart/semesterEnd from the syllabus term dates when present; they bound recurring items when the recurrence has no range.
 - Do not invent items. Skip office hours, policies and grading scales.
+- A row of the grading breakdown (e.g. "End of chapter quizzes - 15%", "Participation 5%") is NOT an item. It belongs only in gradingCategories. Never put a category row in "items" unless the schedule gives it its own specific date or an explicit recurrence.
 - Titles must be short and human readable ("Problem Set 3", "Midterm Exam").
 - If a date has no year, infer it from surrounding context, otherwise use the current year.
 - notes may hold chapter or submission detail, under 120 characters.
