@@ -16,9 +16,11 @@ import { toast } from "sonner";
 
 export function ManualAssignmentDialog({
   courseId,
+  semester = "",
   children,
 }: {
   courseId: string;
+  semester?: string;
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -27,6 +29,18 @@ export function ManualAssignmentDialog({
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dateTouched, setDateTouched] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
+
+  /** Read a date out of whatever the student typed, unless they set one themselves. */
+  function autoDate(nextTitle: string, nextNotes: string) {
+    if (dateTouched) return;
+    const found =
+      parseDueDateFromText(nextTitle, semester) ?? parseDueDateFromText(nextNotes, semester);
+    setDueDate(found ?? "");
+    setAutoFilled(Boolean(found));
+  }
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
