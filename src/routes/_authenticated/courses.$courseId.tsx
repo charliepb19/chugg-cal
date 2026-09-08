@@ -121,6 +121,13 @@ function CourseDetail() {
         )}
       </section>
 
+      <section className="mt-6 rounded-xl border border-border bg-card p-4">
+        <CategoryWeights rows={catRows} onChange={setCatRows} detected={catsDetected} />
+        <Button size="sm" className="mt-3" onClick={saveCategories} disabled={savingCats}>
+          Save breakdown
+        </Button>
+      </section>
+
       <section className="mt-8">
         <h2 className="text-sm font-medium">Add assignments</h2>
         <p className="mb-4 mt-1 text-sm text-muted-foreground">
