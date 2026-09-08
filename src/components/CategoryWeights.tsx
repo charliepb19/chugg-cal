@@ -2,10 +2,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 
-export type CategoryRow = { name: string; percent: number | ""; note?: string };
+export type CategoryRow = {
+  name: string;
+  percent: number | "";
+  note?: string;
+  /** true when each item in the category is worth this percentage on its own */
+  perItem?: boolean;
+};
 
-export function weightTotal(rows: CategoryRow[]): number {
-  return rows.reduce((sum, r) => sum + (typeof r.percent === "number" ? r.percent : 0), 0);
+/**
+ * Total share of the final grade. A per-item category counts once per item in it,
+ * so three exams at 20% each contribute 60%.
+ */
+export function weightTotal(rows: CategoryRow[], counts: Record<string, number> = {}): number {
+  return rows.reduce((sum, r) => {
+    if (typeof r.percent !== "number") return sum;
+    const n = r.perItem ? Math.max(counts[r.name.trim().toLowerCase()] ?? 1, 1) : 1;
+    return sum + r.percent * n;
+  }, 0);
 }
 
 /**
@@ -17,14 +31,17 @@ export function CategoryWeights({
   onChange,
   detected,
   warnings = [],
+  counts = {},
 }: {
   rows: CategoryRow[];
   onChange: (rows: CategoryRow[]) => void;
   /** true when these came out of the syllabus rather than being typed by hand */
   detected: boolean;
   warnings?: string[];
+  /** how many items sit in each category (lower-cased name), for the total */
+  counts?: Record<string, number>;
 }) {
-  const total = Math.round(weightTotal(rows) * 10) / 10;
+  const total = Math.round(weightTotal(rows, counts) * 10) / 10;
   const update = (i: number, patch: Partial<CategoryRow>) =>
     onChange(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
@@ -68,6 +85,15 @@ export function CategoryWeights({
               }
               className="h-9 w-24 text-right"
             />
+            <select
+              value={row.perItem ? "each" : "split"}
+              aria-label={`How the percentage for ${row.name || "category"} is applied`}
+              onChange={(e) => update(i, { perItem: e.target.value === "each" })}
+              className="h-9 shrink-0 rounded-md border border-input bg-background px-2 text-xs"
+            >
+              <option value="split">split across items</option>
+              <option value="each">each item</option>
+            </select>
             <button
               type="button"
               aria-label={`Remove ${row.name || "category"}`}

@@ -1,0 +1,2 @@
+ALTER TABLE public.grade_categories ADD COLUMN IF NOT EXISTS per_item boolean NOT NULL DEFAULT false;
+UPDATE public.grade_categories SET per_item = true WHERE lower(name) ~ '(exam|midterm|final|test)';

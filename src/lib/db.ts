@@ -33,6 +33,8 @@ export type GradeCategory = {
   name: string;
   weight: number;
   source: AssignmentSource;
+  /** true when each item in the category is worth `weight` on its own (e.g. exams) */
+  per_item: boolean;
 };
 
 export const gradeCategoriesQuery = {
@@ -40,7 +42,7 @@ export const gradeCategoriesQuery = {
   queryFn: async (): Promise<GradeCategory[]> => {
     const { data, error } = await supabase
       .from("grade_categories")
-      .select("id,course_id,name,weight,source")
+      .select("id,course_id,name,weight,source,per_item")
       .order("created_at", { ascending: true });
     if (error) throw error;
     return (data ?? []).map((c) => ({ ...c, weight: Number(c.weight) })) as GradeCategory[];

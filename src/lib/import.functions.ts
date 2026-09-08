@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { defaultPerItem } from "@/lib/grade";
 
 const inputSchema = z.object({
   kind: z.enum(["pdf", "image"]),
@@ -31,6 +32,8 @@ export type ExtractedCategory = {
   /** how many items the syllabus implies for this category, when stated */
   expectedCount: number | null;
   note: string;
+  /** true when every item in the category is worth `percent` on its own */
+  perItem: boolean;
 };
 
 type RawCategory = {
@@ -39,6 +42,7 @@ type RawCategory = {
   weight?: unknown;
   expectedCount?: unknown;
   note?: unknown;
+  perItem?: unknown;
 };
 
 
@@ -65,7 +69,7 @@ Return STRICT JSON of the form:
   "semesterStart": "YYYY-MM-DD or null",
   "semesterEnd": "YYYY-MM-DD or null",
   "gradingCategories": [
-    { "name": "string, e.g. Quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+    { "name": "string, e.g. Quizzes", "percent": 15, "perItem": false, "expectedCount": 12 or null, "note": "short string or empty string" }
   ],
   "items": [
     {
@@ -83,6 +87,8 @@ Rules:
 - Include every assignment, quiz, exam, project, reading, discussion post or deliverable with a stated or implied date.
 - gradingCategories: copy the syllabus grading breakdown / evaluation table exactly (e.g. "Quizzes: 15%, Homework: 20%, Final Exam: 40%"). Use the syllabus wording for name and a number 0-100 for percent. Return an empty array when the syllabus states no grading breakdown. Do not invent or rebalance percentages, even if they do not add up to 100.
 - expectedCount: how many individual items that category implies, when the syllabus says so or implies it ("weekly quizzes" over a 13-week term -> 13, "best 8 of 10 labs" -> 10, "two midterms" -> 2). Use null when nothing implies a count. Put wording like "weekly quizzes, lowest dropped" in note.
+- perItem: true when the percentage applies to EACH item in the category rather than being shared between them. Exams are usually per item: "Exams: 20%" with three exams, "Each exam is worth 20%", or "Exam 1 20%, Exam 2 20%, Exam 3 20%" all mean perItem true with percent 20. A single pooled figure covering everything in the category ("Quizzes: 15% total", "Homework 20%") is perItem false.
+- When the syllabus lists exams separately with the same percentage (Exam 1 20%, Exam 2 20%, Exam 3 20%), return ONE category named "Exams" with percent 20, perItem true and expectedCount 3 — do not return one category per exam.
 - If something repeats (e.g. "quiz every Friday", "weekly reading response"), set recurring to true and fill recurrence with the weekday, the range it runs over, and how many weeks between occurrences (1 for weekly, 2 for biweekly). Leave date null for those.
 - Use semesterStart/semesterEnd from the syllabus term dates when present; they bound recurring items when the recurrence has no range.
 - Do not invent items. Skip office hours, policies and grading scales.
@@ -98,7 +104,7 @@ Return STRICT JSON of the form:
 {
   "readable": true | false,
   "gradingCategories": [
-    { "name": "string, e.g. End of chapter quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+    { "name": "string, e.g. End of chapter quizzes", "percent": 15, "perItem": false, "expectedCount": 12 or null, "note": "short string or empty string" }
   ],
   "items": [
     {
@@ -122,6 +128,7 @@ Rules:
 - Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
 - Some screenshots are a grading breakdown / weight table instead of a list of dated work (e.g. "End of chapter quizzes 15%", "Midterm 25%"). Put those rows ONLY in gradingCategories with the percentage, and return an empty items array for that image. Never turn a grading category into a dateless assignment.
 - gradingCategories is an empty array when the screenshot shows no weight table.
+- perItem is true when the percentage applies to EACH item in that category instead of being shared ("Each exam 20%", or Exam 1/2/3 each listed at 20%). In that case return one category (e.g. "Exams") with percent 20, perItem true and expectedCount set to how many are listed. A single pooled figure ("Quizzes 15%") is perItem false.
 - Skip navigation, folders, headers, announcements, grade totals and anything without an assignment name.
 - Set "readable" to false only when the image is too blurry, cropped or dark to read, or shows neither an assignment list nor a grading breakdown.
 Return only JSON.`;
@@ -242,11 +249,17 @@ async function callGateway(
     const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
     if (percent <= 0) continue;
     const expected = Number(c?.expectedCount);
+    const note = typeof c?.note === "string" ? c.note.slice(0, 120) : "";
     categories.push({
       name,
       percent,
       expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
-      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
+      note,
+      // Exams normally carry their percentage each; a syllabus saying "each" settles it.
+      perItem:
+        c?.perItem === true ||
+        /\beach\b|\bapiece\b|\bper exam\b|\bper test\b/i.test(`${name} ${note}`) ||
+        (c?.perItem !== false && defaultPerItem(name)),
     });
   }
 
@@ -287,7 +300,13 @@ async function callGateway(
           const cleanName = title.replace(/[-–—:]?\s*\d+(\.\d+)?\s*%.*$/, "").trim() || title;
           if (!categoryNames.has(norm(cleanName))) {
             categoryNames.add(norm(cleanName));
-            categories.push({ name: cleanName, percent, expectedCount: null, note: "" });
+            categories.push({
+              name: cleanName,
+              percent,
+              expectedCount: null,
+              note: "",
+              perItem: defaultPerItem(cleanName),
+            });
           }
           continue;
         }
