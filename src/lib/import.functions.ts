@@ -41,11 +41,14 @@ type RawItem = {
   } | null;
 };
 
-const SYSTEM_PROMPT = `You extract every graded deadline from course materials for a student calendar.
+const SYSTEM_PROMPT = `You extract every graded deadline AND the grading breakdown from course materials for a student calendar.
 Return STRICT JSON of the form:
 {
   "semesterStart": "YYYY-MM-DD or null",
   "semesterEnd": "YYYY-MM-DD or null",
+  "gradingCategories": [
+    { "name": "string, e.g. Quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+  ],
   "items": [
     {
       "title": "string",
@@ -60,6 +63,8 @@ Return STRICT JSON of the form:
 }
 Rules:
 - Include every assignment, quiz, exam, project, reading, discussion post or deliverable with a stated or implied date.
+- gradingCategories: copy the syllabus grading breakdown / evaluation table exactly (e.g. "Quizzes: 15%, Homework: 20%, Final Exam: 40%"). Use the syllabus wording for name and a number 0-100 for percent. Return an empty array when the syllabus states no grading breakdown. Do not invent or rebalance percentages, even if they do not add up to 100.
+- expectedCount: how many individual items that category implies, when the syllabus says so or implies it ("weekly quizzes" over a 13-week term -> 13, "best 8 of 10 labs" -> 10, "two midterms" -> 2). Use null when nothing implies a count. Put wording like "weekly quizzes, lowest dropped" in note.
 - If something repeats (e.g. "quiz every Friday", "weekly reading response"), set recurring to true and fill recurrence with the weekday, the range it runs over, and how many weeks between occurrences (1 for weekly, 2 for biweekly). Leave date null for those.
 - Use semesterStart/semesterEnd from the syllabus term dates when present; they bound recurring items when the recurrence has no range.
 - Do not invent items. Skip office hours, policies and grading scales.
@@ -67,6 +72,7 @@ Rules:
 - If a date has no year, infer it from surrounding context, otherwise use the current year.
 - notes may hold chapter or submission detail, under 120 characters.
 Return only JSON.`;
+
 
 const IMAGE_SYSTEM_PROMPT = `You read a screenshot of a course assignment list from a school LMS (D2L/Brightspace, Canvas, Blackboard, Moodle) and turn it into a student calendar.
 Return STRICT JSON of the form:
