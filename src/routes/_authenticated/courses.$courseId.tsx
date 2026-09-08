@@ -1,8 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { coursesQuery, assignmentsQuery } from "@/lib/db";
+import { coursesQuery, assignmentsQuery, gradeCategoriesQuery } from "@/lib/db";
+import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
 import { ImportPanel } from "@/components/ImportPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,10 +41,46 @@ function CourseDetail() {
   const queryClient = useQueryClient();
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [] } = useQuery(assignmentsQuery);
+  const { data: categories = [] } = useQuery(gradeCategoriesQuery);
 
   const course = courses.find((c) => c.id === courseId);
   const items = assignments.filter((a) => a.course_id === courseId);
   const grade = summarizeGrade(items);
+
+  const courseCats = categories.filter((c) => c.course_id === courseId);
+  const catsDetected = courseCats.some((c) => c.source !== "manual");
+  const [catRows, setCatRows] = useState<CategoryRow[] | null>(null);
+  const [savingCats, setSavingCats] = useState(false);
+  const rows: CategoryRow[] =
+    catRows ?? courseCats.map((c) => ({ name: c.name, percent: c.weight }));
+
+  async function saveCategories() {
+    setSavingCats(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) return;
+      const keep = rows.filter((r) => r.name.trim() && typeof r.percent === "number");
+      await supabase.from("grade_categories").delete().eq("course_id", courseId);
+      if (keep.length) {
+        await supabase.from("grade_categories").insert(
+          keep.map((r) => ({
+            user_id: userId,
+            course_id: courseId,
+            name: r.name.trim(),
+            weight: Number(r.percent),
+            source: "manual",
+          })),
+        );
+      }
+      await queryClient.invalidateQueries({ queryKey: ["grade_categories"] });
+      setCatRows(null);
+      toast.success("Grading breakdown saved.");
+    } finally {
+      setSavingCats(false);
+    }
+  }
+
 
   async function toggle(id: string, completed: boolean) {
     await supabase.from("assignments").update({ completed }).eq("id", id);
@@ -119,6 +158,13 @@ function CourseDetail() {
             to the rest for a full picture.
           </p>
         )}
+      </section>
+
+      <section className="mt-6 rounded-xl border border-border bg-card p-4">
+        <CategoryWeights rows={rows} onChange={setCatRows} detected={catsDetected} />
+        <Button size="sm" className="mt-3" onClick={saveCategories} disabled={savingCats}>
+          Save breakdown
+        </Button>
       </section>
 
       <section className="mt-8">

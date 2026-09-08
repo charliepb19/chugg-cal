@@ -24,6 +24,24 @@ export type ExtractedAssignment = {
   yearUnconfirmed?: boolean;
 };
 
+/** A grading breakdown row read out of the syllabus, e.g. "Quizzes: 15%". */
+export type ExtractedCategory = {
+  name: string;
+  percent: number;
+  /** how many items the syllabus implies for this category, when stated */
+  expectedCount: number | null;
+  note: string;
+};
+
+type RawCategory = {
+  name?: unknown;
+  percent?: unknown;
+  weight?: unknown;
+  expectedCount?: unknown;
+  note?: unknown;
+};
+
+
 type RawItem = {
   title?: unknown;
   date?: unknown;
@@ -41,11 +59,14 @@ type RawItem = {
   } | null;
 };
 
-const SYSTEM_PROMPT = `You extract every graded deadline from course materials for a student calendar.
+const SYSTEM_PROMPT = `You extract every graded deadline AND the grading breakdown from course materials for a student calendar.
 Return STRICT JSON of the form:
 {
   "semesterStart": "YYYY-MM-DD or null",
   "semesterEnd": "YYYY-MM-DD or null",
+  "gradingCategories": [
+    { "name": "string, e.g. Quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+  ],
   "items": [
     {
       "title": "string",
@@ -60,6 +81,8 @@ Return STRICT JSON of the form:
 }
 Rules:
 - Include every assignment, quiz, exam, project, reading, discussion post or deliverable with a stated or implied date.
+- gradingCategories: copy the syllabus grading breakdown / evaluation table exactly (e.g. "Quizzes: 15%, Homework: 20%, Final Exam: 40%"). Use the syllabus wording for name and a number 0-100 for percent. Return an empty array when the syllabus states no grading breakdown. Do not invent or rebalance percentages, even if they do not add up to 100.
+- expectedCount: how many individual items that category implies, when the syllabus says so or implies it ("weekly quizzes" over a 13-week term -> 13, "best 8 of 10 labs" -> 10, "two midterms" -> 2). Use null when nothing implies a count. Put wording like "weekly quizzes, lowest dropped" in note.
 - If something repeats (e.g. "quiz every Friday", "weekly reading response"), set recurring to true and fill recurrence with the weekday, the range it runs over, and how many weeks between occurrences (1 for weekly, 2 for biweekly). Leave date null for those.
 - Use semesterStart/semesterEnd from the syllabus term dates when present; they bound recurring items when the recurrence has no range.
 - Do not invent items. Skip office hours, policies and grading scales.
@@ -67,6 +90,7 @@ Rules:
 - If a date has no year, infer it from surrounding context, otherwise use the current year.
 - notes may hold chapter or submission detail, under 120 characters.
 Return only JSON.`;
+
 
 const IMAGE_SYSTEM_PROMPT = `You read a screenshot of a course assignment list from a school LMS (D2L/Brightspace, Canvas, Blackboard, Moodle) and turn it into a student calendar.
 Return STRICT JSON of the form:
@@ -155,7 +179,7 @@ async function callGateway(
     semesterMonth?: number | null;
     unreadableMessage?: string;
   } = {},
-): Promise<ExtractedAssignment[]> {
+): Promise<{ assignments: ExtractedAssignment[]; categories: ExtractedCategory[] }> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured for this project.");
 
@@ -184,6 +208,7 @@ async function callGateway(
   let parsed: {
     items?: RawItem[];
     assignments?: RawItem[];
+    gradingCategories?: RawCategory[];
     semesterStart?: unknown;
     semesterEnd?: unknown;
     readable?: unknown;
@@ -243,7 +268,26 @@ async function callGateway(
     out.push({ title, dueDate: date, notes, type, weight, recurring: false, yearUnconfirmed });
   }
 
-  return out.sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
+  const categories: ExtractedCategory[] = [];
+  for (const c of parsed.gradingCategories ?? []) {
+    const name = typeof c?.name === "string" ? c.name.trim().slice(0, 80) : "";
+    const rawPercent = typeof c?.percent === "number" ? c.percent : Number(c?.percent ?? c?.weight);
+    if (!name || !Number.isFinite(rawPercent)) continue;
+    const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
+    if (percent <= 0) continue;
+    const expected = Number(c?.expectedCount);
+    categories.push({
+      name,
+      percent,
+      expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
+      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
+    });
+  }
+
+  return {
+    assignments: out.sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999")),
+    categories,
+  };
 }
 
 export const extractAssignments = createServerFn({ method: "POST" })
@@ -267,7 +311,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
             ? 1
             : null;
 
-      const assignments = await callGateway(
+      const { assignments } = await callGateway(
         [
           { role: "system", content: IMAGE_SYSTEM_PROMPT },
           {
@@ -287,7 +331,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
       );
 
       if (!assignments.length) throw new Error(lowQuality);
-      return { assignments };
+      return { assignments, categories: [] as ExtractedCategory[] };
     }
 
     const base64 = data.dataUrl.split(",")[1] ?? "";
@@ -310,13 +354,11 @@ export const extractAssignments = createServerFn({ method: "POST" })
       );
     }
 
-    return {
-      assignments: await callGateway([
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Today is ${today}. Extract every deadline from this syllabus:\n\n${syllabus}`,
-        },
-      ]),
-    };
+    return await callGateway([
+      { role: "system", content: SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `Today is ${today}. Extract every deadline and the grading breakdown from this syllabus:\n\n${syllabus}`,
+      },
+    ]);
   });

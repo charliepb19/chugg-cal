@@ -10,9 +10,13 @@ import { Loader2, FileUp, ImageUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
+import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
+import { categoryWarnings } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean };
+type CatRow = CategoryRow & { expectedCount?: number | null };
+
 
 const HEIC_RE = /\.(heic|heif)$/i;
 
@@ -37,6 +41,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   const imgRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<null | "pdf" | "image">(null);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [cats, setCats] = useState<CatRow[]>([]);
+  const [catsDetected, setCatsDetected] = useState(false);
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
 
@@ -63,6 +69,16 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         return;
       }
       setImportKind(kind);
+      const detected = result.categories ?? [];
+      setCatsDetected(detected.length > 0);
+      setCats(
+        detected.map((c) => ({
+          name: c.name,
+          percent: c.percent,
+          note: c.note,
+          expectedCount: c.expectedCount,
+        })),
+      );
       setRows(
         result.assignments.map((a) => ({
           ...a,
@@ -76,7 +92,9 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       toast.success(
         unsure
           ? `Found ${result.assignments.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
-          : `Found ${result.assignments.length} assignments — review and save.`,
+          : detected.length
+            ? `Found ${result.assignments.length} assignments and a grading breakdown — review and save.`
+            : `Found ${result.assignments.length} assignments — review and save.`,
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
@@ -108,9 +126,31 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         })),
       );
       if (error) throw error;
+
+      const keep = cats.filter((c) => c.name.trim() && typeof c.percent === "number");
+      if (keep.length) {
+        await supabase.from("grade_categories").delete().eq("course_id", courseId);
+        const { error: catError } = await supabase.from("grade_categories").insert(
+          keep.map((c) => ({
+            user_id: userId,
+            course_id: courseId,
+            name: c.name.trim(),
+            weight: Number(c.percent),
+            source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
+          })),
+        );
+        if (catError) throw catError;
+        await queryClient.invalidateQueries({ queryKey: ["grade_categories"] });
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setRows(null);
-      toast.success(`Added ${picked.length} assignments.`);
+      setCats([]);
+      toast.success(
+        keep.length
+          ? `Added ${picked.length} assignments and ${keep.length} grading categories.`
+          : `Added ${picked.length} assignments.`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save");
     } finally {
@@ -183,6 +223,28 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
             );
           })}
         </div>
+
+        {(catsDetected || importKind === "pdf") && (
+          <div className="mt-5 border-t border-border pt-4">
+            <CategoryWeights
+              rows={cats}
+              onChange={setCats}
+              detected={catsDetected}
+              warnings={categoryWarnings(
+                cats
+                  .filter((c) => c.name.trim() && typeof c.percent === "number")
+                  .map((c) => ({
+                    name: c.name,
+                    percent: Number(c.percent),
+                    expectedCount: c.expectedCount,
+                    note: c.note,
+                  })),
+                rows.filter((r) => r.include),
+              )}
+            />
+          </div>
+        )}
+
         <Button className="mt-4" onClick={save} disabled={saving || count === 0}>
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           Add {count} assignment{count === 1 ? "" : "s"}

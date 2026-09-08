@@ -26,6 +26,26 @@ export type Assignment = {
   score: number | null;
 };
 
+export type GradeCategory = {
+  id: string;
+  course_id: string;
+  name: string;
+  weight: number;
+  source: AssignmentSource;
+};
+
+export const gradeCategoriesQuery = {
+  queryKey: ["grade_categories"],
+  queryFn: async (): Promise<GradeCategory[]> => {
+    const { data, error } = await supabase
+      .from("grade_categories")
+      .select("id,course_id,name,weight,source")
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((c) => ({ ...c, weight: Number(c.weight) })) as GradeCategory[];
+  },
+};
+
 export const COURSE_COLORS = [
   "#2563eb",
   "#059669",

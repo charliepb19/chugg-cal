@@ -97,6 +97,47 @@ export type Database = {
         }
         Relationships: []
       }
+      grade_categories: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          name: string
+          source: string
+          updated_at: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          name: string
+          source?: string
+          updated_at?: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_categories_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
