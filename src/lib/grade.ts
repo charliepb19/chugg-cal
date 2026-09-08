@@ -56,13 +56,25 @@ export function guessCategory(
 }
 
 type WeighedItem = { title: string; type: string; weight?: string; category?: string };
-type CatLike = { name: string; percent: number; expectedCount?: number | null };
+type CatLike = {
+  name: string;
+  percent: number;
+  expectedCount?: number | null;
+  /** true when every item in the category is worth this percentage on its own */
+  perItem?: boolean | undefined;
+};
+
+/** Exams are normally worth their percentage each, not shared between them. */
+export function defaultPerItem(name: string): boolean {
+  return /\b(exam|exams|midterm|midterms|final|finals|test|tests)\b/i.test(name.trim());
+}
 
 /**
  * Effective percentage of the final grade for each item.
  *
  * A category's percentage is split evenly between every item put in that
- * category, so adding another quiz automatically re-splits the quiz weight.
+ * category, so adding another quiz automatically re-splits the quiz weight —
+ * unless the category is marked per item (e.g. three exams worth 20% each).
  * A weight typed by hand on an item always wins.
  */
 export function computeWeights(items: WeighedItem[], categories: CatLike[]): (number | null)[] {
@@ -79,18 +91,20 @@ export function computeWeights(items: WeighedItem[], categories: CatLike[]): (nu
     const cat = categories.find((c) => c.name.trim().toLowerCase() === key);
     const count = counts.get(key) ?? 0;
     if (!cat || !cat.percent || !count) return null;
+    if (cat.perItem) return Math.round(cat.percent * 100) / 100;
     return Math.round((cat.percent / count) * 100) / 100;
   });
 }
 
 /**
- * Spread each grading category's percentage evenly across the real assignments
- * that belong to it, so a student never types a weight the syllabus already stated.
+ * Spread each grading category's percentage across the real assignments that
+ * belong to it, so a student never types a weight the syllabus already stated.
+ * Per-item categories give every matching item the full percentage.
  * Existing weights are never overwritten.
  */
 export function weightsFromCategories<T extends { title: string; type: string; weight: string }>(
   items: T[],
-  categories: { name: string; percent: number; expectedCount?: number | null }[],
+  categories: CatLike[],
 ): string[] {
   const out = items.map((i) => i.weight ?? "");
   for (const c of categories) {
@@ -100,7 +114,7 @@ export function weightsFromCategories<T extends { title: string; type: string; w
       .filter((i) => i >= 0);
     if (!idx.length) continue;
     const count = Math.max(idx.length, c.expectedCount ?? 0);
-    const each = Math.round((c.percent / count) * 100) / 100;
+    const each = c.perItem ? c.percent : Math.round((c.percent / count) * 100) / 100;
     if (each <= 0) continue;
     for (const i of idx) if (!out[i]?.trim()) out[i] = `${each}%`;
   }
