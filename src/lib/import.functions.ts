@@ -359,8 +359,8 @@ export const extractAssignments = createServerFn({ method: "POST" })
         { inferYear, semesterMonth, unreadableMessage: lowQuality },
       );
 
-      if (!assignments.length) throw new Error(lowQuality);
-      return { assignments, categories: [] as ExtractedCategory[] };
+      if (!assignments.length && !categories.length) throw new Error(lowQuality);
+      return { assignments, categories };
     }
 
     const base64 = data.dataUrl.split(",")[1] ?? "";
