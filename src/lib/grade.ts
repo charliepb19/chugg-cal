@@ -33,12 +33,54 @@ export function matchesCategory(
   );
 }
 
-/** How many of the extracted items plausibly belong to a grading category. */
+/** How many items belong to a grading category (explicit pick wins over a guess). */
 export function countForCategory(
   categoryName: string,
-  items: { title: string; type: string }[],
+  items: { title: string; type: string; category?: string }[],
 ): number {
-  return items.filter((i) => matchesCategory(categoryName, i)).length;
+  const name = categoryName.trim().toLowerCase();
+  return items.filter((i) =>
+    i.category?.trim()
+      ? i.category.trim().toLowerCase() === name
+      : matchesCategory(categoryName, i),
+  ).length;
+}
+
+
+/** Best-guess grading category for an item, or "" when nothing matches. */
+export function guessCategory(
+  item: { title: string; type: string },
+  categories: { name: string }[],
+): string {
+  return categories.find((c) => matchesCategory(c.name, item))?.name ?? "";
+}
+
+type WeighedItem = { title: string; type: string; weight?: string; category?: string };
+type CatLike = { name: string; percent: number; expectedCount?: number | null };
+
+/**
+ * Effective percentage of the final grade for each item.
+ *
+ * A category's percentage is split evenly between every item put in that
+ * category, so adding another quiz automatically re-splits the quiz weight.
+ * A weight typed by hand on an item always wins.
+ */
+export function computeWeights(items: WeighedItem[], categories: CatLike[]): (number | null)[] {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const key = (item.category ?? "").trim().toLowerCase();
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return items.map((item) => {
+    const typed = parseWeight(item.weight ?? "");
+    if (typed !== null && typed > 0) return typed;
+    const key = (item.category ?? "").trim().toLowerCase();
+    if (!key) return null;
+    const cat = categories.find((c) => c.name.trim().toLowerCase() === key);
+    const count = counts.get(key) ?? 0;
+    if (!cat || !cat.percent || !count) return null;
+    return Math.round((cat.percent / count) * 100) / 100;
+  });
 }
 
 /**
@@ -64,6 +106,7 @@ export function weightsFromCategories<T extends { title: string; type: string; w
   }
   return out;
 }
+
 
 /** Plain-language flags where the syllabus grading policy and the schedule disagree. */
 export function categoryWarnings(
@@ -102,16 +145,21 @@ export type GradeSummary = {
   weightedCount: number;
 };
 
-export function summarizeGrade(items: Assignment[]): GradeSummary {
+export function summarizeGrade(
+  items: Assignment[],
+  categories: { name: string; percent: number }[] = [],
+): GradeSummary {
   let earned = 0;
   let gradedWeight = 0;
   let totalWeight = 0;
   let gradedCount = 0;
   let weightedCount = 0;
 
-  for (const a of items) {
-    const w = parseWeight(a.weight);
-    if (w === null || w <= 0) continue;
+  const weights = computeWeights(items, categories);
+
+  for (const [i, a] of items.entries()) {
+    const w = weights[i];
+    if (w === null || w === undefined || w <= 0) continue;
     weightedCount += 1;
     totalWeight += w;
     if (a.score !== null && a.score !== undefined) {
@@ -120,6 +168,7 @@ export function summarizeGrade(items: Assignment[]): GradeSummary {
       gradedCount += 1;
     }
   }
+
 
   return {
     current: gradedWeight > 0 ? (earned / gradedWeight) * 100 : null,

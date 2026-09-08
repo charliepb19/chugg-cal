@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Trash2 } from "lucide-react";
-import { summarizeGrade, letterGrade, parseWeight } from "@/lib/grade";
+import { summarizeGrade, letterGrade, computeWeights, guessCategory } from "@/lib/grade";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({
@@ -45,9 +45,16 @@ function CourseDetail() {
 
   const course = courses.find((c) => c.id === courseId);
   const items = assignments.filter((a) => a.course_id === courseId);
-  const grade = summarizeGrade(items);
 
   const courseCats = categories.filter((c) => c.course_id === courseId);
+  const catWeights = courseCats.map((c) => ({ name: c.name, percent: c.weight }));
+  // An item with no category picked yet still falls into its best match.
+  const effective = items.map((a) => ({
+    ...a,
+    category: a.category?.trim() ? a.category : guessCategory(a, catWeights),
+  }));
+  const grade = summarizeGrade(effective, catWeights);
+  const itemWeights = computeWeights(effective, catWeights);
   const catsDetected = courseCats.some((c) => c.source !== "manual");
   const [catRows, setCatRows] = useState<CategoryRow[] | null>(null);
   const [savingCats, setSavingCats] = useState(false);
@@ -84,6 +91,12 @@ function CourseDetail() {
 
   async function toggle(id: string, completed: boolean) {
     await supabase.from("assignments").update({ completed }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["assignments"] });
+  }
+
+  async function setCategory(id: string, category: string) {
+    // Clearing the typed weight lets the category's percentage drive this item.
+    await supabase.from("assignments").update({ category, weight: "" }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["assignments"] });
   }
 
@@ -183,7 +196,7 @@ function CourseDetail() {
           <p className="mt-3 text-sm text-muted-foreground">Nothing here yet.</p>
         ) : (
           <ul className="mt-3 divide-y divide-border rounded-xl border border-border bg-card">
-            {items.map((a) => (
+            {items.map((a, i) => (
               <li key={a.id} className="flex items-center gap-3 px-4 py-3">
                 <Checkbox
                   checked={a.completed}
@@ -197,8 +210,23 @@ function CourseDetail() {
                   </p>
                   {a.notes && <p className="truncate text-xs text-muted-foreground">{a.notes}</p>}
                 </div>
-                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
-                  {parseWeight(a.weight) !== null ? `${parseWeight(a.weight)}% of grade` : "No weight"}
+                {courseCats.length > 0 && (
+                  <select
+                    value={effective[i]?.category ?? ""}
+                    onChange={(e) => setCategory(a.id, e.target.value)}
+                    aria-label={`Grading category for ${a.title}`}
+                    className="hidden h-8 shrink-0 rounded-md border border-input bg-background px-2 text-xs sm:block"
+                  >
+                    <option value="">No category</option>
+                    {courseCats.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground sm:inline">
+                  {itemWeights[i] != null ? `${itemWeights[i]}% of grade` : "No weight"}
                 </span>
                 <div className="flex shrink-0 items-center gap-1">
                   <Input

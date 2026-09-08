@@ -11,10 +11,10 @@ import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
-import { categoryWarnings, weightsFromCategories } from "@/lib/grade";
+import { categoryWarnings, computeWeights, guessCategory } from "@/lib/grade";
 
 
-type Row = ExtractedAssignment & { include: boolean };
+type Row = ExtractedAssignment & { include: boolean; category?: string };
 type CatRow = CategoryRow & { expectedCount?: number | null };
 
 /** Only complete category rows count towards saving and auto-weighting. */
@@ -161,11 +161,10 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
 
   async function save() {
     const all = rows ?? [];
-    const auto = weightsFromCategories(all, cleanCats(cats));
-    const picked = all
-      .map((r, i) => ({ ...r, weight: r.weight?.trim() ? r.weight : (auto[i] ?? "") }))
-      .filter((r) => r.include);
     const keep = cleanCats(cats);
+    const picked = all
+      .map((r) => ({ ...r, category: r.category ?? guessCategory(r, keep) }))
+      .filter((r) => r.include);
     if (!picked.length && !keep.length) return;
     setSaving(true);
     try {
@@ -184,7 +183,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
             source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
             confirmed: true,
             type: r.type,
-            weight: r.weight,
+            weight: r.weight ?? "",
+            category: r.category ?? "",
           })),
         );
         if (error) throw error;
@@ -205,21 +205,31 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         await queryClient.invalidateQueries({ queryKey: ["grade_categories"] });
       }
 
-      // Spread the breakdown across assignments already on this course that have no weight yet.
+      // Put assignments already on this course into the matching category, so the
+      // breakdown's percentages cover them too and re-split as more are added.
       let backfilled = 0;
       if (keep.length) {
         const { data: existing } = await supabase
           .from("assignments")
-          .select("id,title,type,weight")
+          .select("id,title,type,weight,category,source")
           .eq("course_id", courseId);
-        const list = (existing ?? []) as { id: string; title: string; type: string; weight: string }[];
-        const weights = weightsFromCategories(list, keep);
-        for (const [i, a] of list.entries()) {
-          const next = weights[i] ?? "";
-          if (!a.weight?.trim() && next) {
-            await supabase.from("assignments").update({ weight: next }).eq("id", a.id);
-            backfilled += 1;
-          }
+        const list = (existing ?? []) as {
+          id: string;
+          title: string;
+          type: string;
+          weight: string;
+          category: string;
+          source: string;
+        }[];
+        for (const a of list) {
+          if (a.category?.trim()) continue;
+          const guess = guessCategory(a, keep);
+          if (!guess) continue;
+          // A weight an earlier import wrote in would freeze the old split.
+          const patch: { category: string; weight?: string } = { category: guess };
+          if (a.source !== "manual") patch.weight = "";
+          await supabase.from("assignments").update(patch).eq("id", a.id);
+          backfilled += 1;
         }
       }
 
@@ -228,7 +238,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       setCats([]);
       toast.success(
         keep.length
-          ? `Added ${picked.length} assignment${picked.length === 1 ? "" : "s"} and ${keep.length} grading categories${backfilled ? `, weighting ${backfilled} of them automatically` : ""}.`
+          ? `Added ${picked.length} assignment${picked.length === 1 ? "" : "s"} and ${keep.length} grading categories${backfilled ? `, sorting ${backfilled} existing item${backfilled === 1 ? "" : "s"} into them` : ""}.`
           : `Added ${picked.length} assignments.`,
       );
     } catch (err) {
@@ -241,7 +251,11 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   if (rows) {
     const count = rows.filter((r) => r.include).length;
     const readyCats = cleanCats(cats);
-    const autoWeights = weightsFromCategories(rows, readyCats);
+    const resolved = rows.map((r) => ({ ...r, category: r.category ?? guessCategory(r, readyCats) }));
+    const autoWeights = computeWeights(
+      resolved.map((r) => ({ ...r, weight: "" })),
+      readyCats,
+    );
     return (
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
@@ -279,14 +293,24 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                   <option value="quiz">Quiz</option>
                   <option value="reading">Reading</option>
                 </select>
+                <select
+                  value={resolved[i]?.category ?? ""}
+                  onChange={(e) => update({ category: e.target.value })}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  aria-label={`Grading category for ${row.title}`}
+                  disabled={readyCats.length === 0}
+                >
+                  <option value="">No category</option>
+                  {readyCats.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
                 <Input
-                  value={row.weight?.trim() ? row.weight : (autoWeights[i] ?? "")}
-                  placeholder="Weight"
-                  title={
-                    !row.weight?.trim() && autoWeights[i]
-                      ? "Worked out from the grading breakdown"
-                      : undefined
-                  }
+                  value={row.weight ?? ""}
+                  placeholder={autoWeights[i] != null ? `${autoWeights[i]}%` : "Weight"}
+                  title="Left blank, this is worked out from the grading breakdown"
                   onChange={(e) => update({ weight: e.target.value })}
                   className="h-9 w-24"
                 />
@@ -317,12 +341,12 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
               rows={cats}
               onChange={setCats}
               detected={catsDetected}
-              warnings={categoryWarnings(readyCats, rows.filter((r) => r.include))}
+              warnings={categoryWarnings(readyCats, resolved.filter((r) => r.include))}
             />
             {readyCats.length > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                These percentages are shared out across the matching work automatically, so you
-                don't have to weight each item yourself.
+                Each percentage is split evenly across the items in that category, so it updates
+                itself whenever you add more. Use the dropdown to move an item to another category.
               </p>
             )}
           </div>

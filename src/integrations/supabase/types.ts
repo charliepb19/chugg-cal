@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       assignments: {
         Row: {
+          category: string
           completed: boolean
           confirmed: boolean
           course_id: string
@@ -31,6 +32,7 @@ export type Database = {
           weight: string
         }
         Insert: {
+          category?: string
           completed?: boolean
           confirmed?: boolean
           course_id: string
@@ -46,6 +48,7 @@ export type Database = {
           weight?: string
         }
         Update: {
+          category?: string
           completed?: boolean
           confirmed?: boolean
           course_id?: string
