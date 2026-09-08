@@ -178,7 +178,6 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         if (error) throw error;
       }
 
-      const keep = cats.filter((c) => c.name.trim() && typeof c.percent === "number");
       if (keep.length) {
         await supabase.from("grade_categories").delete().eq("course_id", courseId);
         const { error: catError } = await supabase.from("grade_categories").insert(
@@ -194,12 +193,30 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         await queryClient.invalidateQueries({ queryKey: ["grade_categories"] });
       }
 
+      // Spread the breakdown across assignments already on this course that have no weight yet.
+      let backfilled = 0;
+      if (keep.length) {
+        const { data: existing } = await supabase
+          .from("assignments")
+          .select("id,title,type,weight")
+          .eq("course_id", courseId);
+        const list = (existing ?? []) as { id: string; title: string; type: string; weight: string }[];
+        const weights = weightsFromCategories(list, keep);
+        for (const [i, a] of list.entries()) {
+          const next = weights[i] ?? "";
+          if (!a.weight?.trim() && next) {
+            await supabase.from("assignments").update({ weight: next }).eq("id", a.id);
+            backfilled += 1;
+          }
+        }
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setRows(null);
       setCats([]);
       toast.success(
         keep.length
-          ? `Added ${picked.length} assignments and ${keep.length} grading categories.`
+          ? `Added ${picked.length} assignment${picked.length === 1 ? "" : "s"} and ${keep.length} grading categories${backfilled ? `, weighting ${backfilled} of them automatically` : ""}.`
           : `Added ${picked.length} assignments.`,
       );
     } catch (err) {
