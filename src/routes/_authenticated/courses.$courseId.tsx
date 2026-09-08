@@ -1,8 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { coursesQuery, assignmentsQuery } from "@/lib/db";
+import { coursesQuery, assignmentsQuery, gradeCategoriesQuery } from "@/lib/db";
+import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
 import { ImportPanel } from "@/components/ImportPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
