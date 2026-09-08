@@ -33,13 +33,19 @@ export function matchesCategory(
   );
 }
 
-/** How many of the extracted items plausibly belong to a grading category. */
+/** How many items belong to a grading category (explicit pick wins over a guess). */
 export function countForCategory(
   categoryName: string,
-  items: { title: string; type: string }[],
+  items: { title: string; type: string; category?: string }[],
 ): number {
-  return items.filter((i) => matchesCategory(categoryName, i)).length;
+  const name = categoryName.trim().toLowerCase();
+  return items.filter((i) =>
+    i.category?.trim()
+      ? i.category.trim().toLowerCase() === name
+      : matchesCategory(categoryName, i),
+  ).length;
 }
+
 
 /** Best-guess grading category for an item, or "" when nothing matches. */
 export function guessCategory(
