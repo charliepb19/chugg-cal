@@ -13,12 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { parseDueDateFromText } from "@/lib/parse-date";
+
 
 export function ManualAssignmentDialog({
   courseId,
+  semester = "",
   children,
 }: {
   courseId: string;
+  semester?: string;
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -27,6 +31,18 @@ export function ManualAssignmentDialog({
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dateTouched, setDateTouched] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
+
+  /** Read a date out of whatever the student typed, unless they set one themselves. */
+  function autoDate(nextTitle: string, nextNotes: string) {
+    if (dateTouched) return;
+    const found =
+      parseDueDateFromText(nextTitle, semester) ?? parseDueDateFromText(nextNotes, semester);
+    setDueDate(found ?? "");
+    setAutoFilled(Boolean(found));
+  }
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,6 +65,8 @@ export function ManualAssignmentDialog({
       setTitle("");
       setDueDate("");
       setNotes("");
+      setDateTouched(false);
+      setAutoFilled(false);
       setOpen(false);
       toast.success("Assignment added.");
     } catch (err) {
@@ -68,7 +86,16 @@ export function ManualAssignmentDialog({
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="m-title">Title</Label>
-            <Input id="m-title" required value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input
+              id="m-title"
+              required
+              placeholder="e.g. Essay 2 due Oct 3"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                autoDate(e.target.value, notes);
+              }}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="m-due">Due date</Label>
@@ -76,13 +103,30 @@ export function ManualAssignmentDialog({
               id="m-due"
               type="date"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(e) => {
+                setDateTouched(true);
+                setAutoFilled(false);
+                setDueDate(e.target.value);
+              }}
             />
+            {autoFilled && (
+              <p className="text-xs text-muted-foreground">
+                Filled in from what you typed — change it if it&apos;s wrong.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="m-notes">Notes</Label>
-            <Textarea id="m-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea
+              id="m-notes"
+              value={notes}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                autoDate(title, e.target.value);
+              }}
+            />
           </div>
+
           <Button type="submit" disabled={busy} className="w-full">
             Add assignment
           </Button>

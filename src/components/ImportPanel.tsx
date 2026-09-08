@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, FileUp, ImageUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
+import { parseDueDateFromText } from "@/lib/parse-date";
+
 
 type Row = ExtractedAssignment & { include: boolean };
 
@@ -61,7 +63,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         return;
       }
       setImportKind(kind);
-      setRows(result.assignments.map((a) => ({ ...a, include: true })));
+      setRows(
+        result.assignments.map((a) => ({
+          ...a,
+          // Anything the model left undated: recover the date from its own text.
+          dueDate: a.dueDate ?? parseDueDateFromText(`${a.title} ${a.notes}`, semester),
+          include: true,
+        })),
+      );
+
       const unsure = result.assignments.filter((a) => a.yearUnconfirmed).length;
       toast.success(
         unsure
@@ -226,7 +236,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       />
 
       <div className="mt-3 flex items-center justify-center">
-        <ManualAssignmentDialog courseId={courseId}>
+        <ManualAssignmentDialog courseId={courseId} semester={semester}>
           <Button variant="ghost" size="sm" className="text-muted-foreground">
             <Pencil className="h-3.5 w-3.5" />
             Or add one by hand
