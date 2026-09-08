@@ -280,8 +280,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                   <option value="reading">Reading</option>
                 </select>
                 <Input
-                  value={row.weight}
+                  value={row.weight?.trim() ? row.weight : (autoWeights[i] ?? "")}
                   placeholder="Weight"
+                  title={
+                    !row.weight?.trim() && autoWeights[i]
+                      ? "Worked out from the grading breakdown"
+                      : undefined
+                  }
                   onChange={(e) => update({ weight: e.target.value })}
                   className="h-9 w-24"
                 />
