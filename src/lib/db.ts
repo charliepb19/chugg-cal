@@ -23,6 +23,7 @@ export type Assignment = {
   confirmed: boolean;
   type: AssignmentType;
   weight: string;
+  category: string;
   score: number | null;
 };
 
@@ -74,7 +75,7 @@ export const assignmentsQuery = {
   queryFn: async (): Promise<Assignment[]> => {
     const { data, error } = await supabase
       .from("assignments")
-      .select("id,course_id,title,notes,due_date,completed,source,confirmed,type,weight,score")
+      .select("id,course_id,title,notes,due_date,completed,source,confirmed,type,weight,category,score")
       .order("due_date", { ascending: true, nullsFirst: false });
     if (error) throw error;
     return (data ?? []) as Assignment[];
