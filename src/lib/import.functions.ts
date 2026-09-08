@@ -234,6 +234,25 @@ async function callGateway(
   const semesterEnd = isDate(parsed.semesterEnd) ? parsed.semesterEnd : null;
   const raw = parsed.items ?? parsed.assignments ?? [];
 
+  const categories: ExtractedCategory[] = [];
+  for (const c of parsed.gradingCategories ?? []) {
+    const name = typeof c?.name === "string" ? c.name.trim().slice(0, 80) : "";
+    const rawPercent = typeof c?.percent === "number" ? c.percent : Number(c?.percent ?? c?.weight);
+    if (!name || !Number.isFinite(rawPercent)) continue;
+    const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
+    if (percent <= 0) continue;
+    const expected = Number(c?.expectedCount);
+    categories.push({
+      name,
+      percent,
+      expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
+      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
+    });
+  }
+
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const categoryNames = new Set(categories.map((c) => norm(c.name)));
+
   const out: ExtractedAssignment[] = [];
   for (const item of raw) {
     const title = typeof item?.title === "string" ? item.title.trim().slice(0, 200) : "";
