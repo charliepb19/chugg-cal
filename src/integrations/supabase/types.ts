@@ -106,6 +106,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          per_item: boolean
           source: string
           updated_at: string
           user_id: string
@@ -116,6 +117,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          per_item?: boolean
           source?: string
           updated_at?: string
           user_id: string
@@ -126,6 +128,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          per_item?: boolean
           source?: string
           updated_at?: string
           user_id?: string
