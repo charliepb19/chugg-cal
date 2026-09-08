@@ -223,6 +223,28 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
             );
           })}
         </div>
+
+        {(catsDetected || importKind === "pdf") && (
+          <div className="mt-5 border-t border-border pt-4">
+            <CategoryWeights
+              rows={cats}
+              onChange={setCats}
+              detected={catsDetected}
+              warnings={categoryWarnings(
+                cats
+                  .filter((c) => c.name.trim() && typeof c.percent === "number")
+                  .map((c) => ({
+                    name: c.name,
+                    percent: Number(c.percent),
+                    expectedCount: c.expectedCount,
+                    note: c.note,
+                  })),
+                rows.filter((r) => r.include),
+              )}
+            />
+          </div>
+        )}
+
         <Button className="mt-4" onClick={save} disabled={saving || count === 0}>
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           Add {count} assignment{count === 1 ? "" : "s"}
