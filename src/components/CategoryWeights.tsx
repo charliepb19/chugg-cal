@@ -85,6 +85,15 @@ export function CategoryWeights({
               }
               className="h-9 w-24 text-right"
             />
+            <select
+              value={row.perItem ? "each" : "split"}
+              aria-label={`How the percentage for ${row.name || "category"} is applied`}
+              onChange={(e) => update(i, { perItem: e.target.value === "each" })}
+              className="h-9 shrink-0 rounded-md border border-input bg-background px-2 text-xs"
+            >
+              <option value="split">split across items</option>
+              <option value="each">each item</option>
+            </select>
             <button
               type="button"
               aria-label={`Remove ${row.name || "category"}`}
