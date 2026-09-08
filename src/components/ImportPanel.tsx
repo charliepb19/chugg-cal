@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
-import { categoryWarnings, computeWeights, guessCategory } from "@/lib/grade";
+import { categoryWarnings, computeWeights, guessCategory, mergeCategories } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean; category?: string };
@@ -139,7 +139,11 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       setImportKind(kind);
       if (detected.length) {
         setCatsDetected(true);
-        setCats((prev) => (prev.length ? prev : detected));
+        // The same category can show up in two documents, or as "Exam 1 / Exam 2".
+        const merged = mergeCategories(
+          detected.map((d) => ({ ...d, percent: Number(d.percent) || 0 })),
+        ) as CatRow[];
+        setCats((prev) => (prev.length ? prev : merged));
       }
       setRows((prev) => {
         const merged = [...(prev ?? [])];
