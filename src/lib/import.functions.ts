@@ -85,7 +85,10 @@ Return STRICT JSON of the form:
 }
 Rules:
 - Layouts vary a lot: columns can appear in any order, and dates may be "Oct 3", "10/3", "3 Oct 2026", "Due Friday, October 3 at 11:59 PM", or inside a "Due" column header.
-- Only the DUE date belongs in "date". LMS rows often show several dates: "Available from", "Available until", "Opens", "Starts", "Posted", "Unlocks", "Last updated", "Availability window". Never use those as the due date. If a row shows an availability window and a due date, take only the due date. If a row shows no due date at all, set date to null and mention the other date in notes (e.g. "opens Oct 1").
+- Pick the date the student must finish by. Start dates are never the due date: "Available from", "Opens", "Starts", "Posted", "Unlocks", "Last updated" must never go in "date".
+- Closing dates ARE due dates when no explicit "Due" date is shown: "Availability ends", "Available until", "Closes", "Ends", "Due by", or the end of an availability window (e.g. "Oct 1 - Oct 8" -> Oct 8). Quizzes on D2L usually show only "Availability ends" — use that as the due date and note it in "notes" (e.g. "availability ends").
+- If a row shows both an explicit due date and an availability window, use the explicit due date.
+- Only when a row has no due date and no closing date at all, set date to null and mention the other date in notes (e.g. "opens Oct 1").
 - "yearVisible" is true only when the year is actually printed on screen for that row. When only month/day is shown, set yearVisible false and still give your best-guess year in "date".
 - Infer type from wording: "Quiz"/"Test bank" -> quiz, "Exam"/"Midterm"/"Final" -> exam, "Read"/"Chapter"/"Reading" -> reading, otherwise assignment.
 - Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
@@ -274,7 +277,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
                 type: "text",
                 text: `Today is ${today}.${
                   semester ? ` This course runs in ${semester}.` : ""
-                } This screenshot shows a course assignment list from a school LMS. Read every row and return only real due dates.`,
+                } This screenshot shows a course assignment list from a school LMS. Read every row. Use the due date when one is shown; when a row (often a quiz) only shows "Availability ends" / "Available until" / "Closes", use that closing date as the due date.`,
               },
               { type: "image_url", image_url: { url: data.dataUrl } },
             ],
