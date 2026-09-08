@@ -41,6 +41,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   const imgRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<null | "pdf" | "image">(null);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [cats, setCats] = useState<CatRow[]>([]);
+  const [catsDetected, setCatsDetected] = useState(false);
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
 
