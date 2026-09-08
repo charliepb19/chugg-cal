@@ -313,22 +313,6 @@ async function callGateway(
     out.push({ title, dueDate: date, notes, type, weight, recurring: false, yearUnconfirmed });
   }
 
-  const categories: ExtractedCategory[] = [];
-  for (const c of parsed.gradingCategories ?? []) {
-    const name = typeof c?.name === "string" ? c.name.trim().slice(0, 80) : "";
-    const rawPercent = typeof c?.percent === "number" ? c.percent : Number(c?.percent ?? c?.weight);
-    if (!name || !Number.isFinite(rawPercent)) continue;
-    const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
-    if (percent <= 0) continue;
-    const expected = Number(c?.expectedCount);
-    categories.push({
-      name,
-      percent,
-      expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
-      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
-    });
-  }
-
   return {
     assignments: out.sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999")),
     categories,
