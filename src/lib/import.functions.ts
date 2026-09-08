@@ -370,7 +370,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
                 type: "text",
                 text: `Today is ${today}.${
                   semester ? ` This course runs in ${semester}.` : ""
-                } This screenshot shows either a course assignment list from a school LMS or a grading breakdown table. Read every row. Use the due date when one is shown; when a row (often a quiz) only shows "Availability ends" / "Available until" / "Closes", use that closing date as the due date. If a row is a grading weight (a category and a percentage, with no date), put it in gradingCategories, not in items.`,
+                } This screenshot shows either a course assignment list from a school LMS or a grading breakdown table. Read every row. Use the due date when one is shown; when a row (often a quiz) only shows "Availability ends" / "Available until" / "Closes", use that closing date as the due date. Ignore any "Available" label that is NOT a closing date (e.g. a bare "Available" or "Available from" opening date) — do not add it to the date and do not mention it. If a row is a grading weight (a category and a percentage, with no date), put it in gradingCategories, not in items.`,
               },
               { type: "image_url", image_url: { url: data.dataUrl } },
             ],
