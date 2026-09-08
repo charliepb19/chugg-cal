@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { defaultPerItem } from "@/lib/grade";
+import { defaultPerItem, mergeCategories } from "@/lib/grade";
 
 const inputSchema = z.object({
   kind: z.enum(["pdf", "image"]),
@@ -334,7 +334,7 @@ async function callGateway(
 
   return {
     assignments: out.sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999")),
-    categories,
+    categories: mergeCategories(categories),
   };
 }
 

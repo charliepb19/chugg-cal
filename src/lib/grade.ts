@@ -69,6 +69,68 @@ export function defaultPerItem(name: string): boolean {
   return /\b(exam|exams|midterm|midterms|final|finals|test|tests)\b/i.test(name.trim());
 }
 
+type MergeableCategory = {
+  name: string;
+  percent: number;
+  expectedCount?: number | null;
+  note?: string;
+  perItem?: boolean;
+};
+
+/**
+ * Group name used to spot the same grading category written twice — "Exam 1",
+ * "Exam #2" and "Exams" all collapse to one entry.
+ */
+function categoryKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[#()]/g, " ")
+    .replace(/\b(no|number|part)\b/g, " ")
+    .replace(/\b(i{1,3}|iv|v|one|two|three|four|five)\b/g, " ")
+    .replace(/\d+/g, " ")
+    .replace(/[^a-z]+/g, " ")
+    .trim()
+    .replace(/(es|s)$/, "");
+}
+
+/**
+ * Collapse repeated grading rows into one category. Three "Exam N — 20%" rows
+ * become a single per-item Exams category worth 20% each, instead of three
+ * duplicates stacking up to 60% in the breakdown list.
+ */
+export function mergeCategories<T extends MergeableCategory>(cats: T[]): T[] {
+  const groups = new Map<string, T[]>();
+  const order: string[] = [];
+  for (const c of cats) {
+    const key = categoryKey(c.name) || c.name.trim().toLowerCase();
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(c);
+  }
+  return order.map((key) => {
+    const group = groups.get(key)!;
+    const first = group[0]!;
+    if (group.length === 1) return first;
+    const numbered = group.filter((c) => /\d|\b(i{1,3}|iv|v)\b/i.test(c.name));
+    const pooled = group.find((c) => !/\d/.test(c.name));
+    const percents = group.map((c) => c.percent);
+    const allSame = percents.every((p) => p === percents[0]);
+    const base = pooled ?? first;
+    // Several same-sized rows (Exam 1/2/3 at 20%) mean 20% each, not 60% total.
+    const perItem = base.perItem ?? (numbered.length > 1 && allSame) ?? false;
+    return {
+      ...base,
+      name: base.name,
+      percent: allSame ? percents[0]! : Math.max(...percents),
+      perItem: perItem || (numbered.length > 1 && allSame),
+      expectedCount:
+        base.expectedCount ?? (numbered.length > 1 ? numbered.length : null),
+    } as T;
+  });
+}
+
 /**
  * Effective percentage of the final grade for each item.
  *
