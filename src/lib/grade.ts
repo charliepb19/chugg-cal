@@ -145,16 +145,21 @@ export type GradeSummary = {
   weightedCount: number;
 };
 
-export function summarizeGrade(items: Assignment[]): GradeSummary {
+export function summarizeGrade(
+  items: Assignment[],
+  categories: { name: string; percent: number }[] = [],
+): GradeSummary {
   let earned = 0;
   let gradedWeight = 0;
   let totalWeight = 0;
   let gradedCount = 0;
   let weightedCount = 0;
 
-  for (const a of items) {
-    const w = parseWeight(a.weight);
-    if (w === null || w <= 0) continue;
+  const weights = computeWeights(items, categories);
+
+  for (const [i, a] of items.entries()) {
+    const w = weights[i];
+    if (w === null || w === undefined || w <= 0) continue;
     weightedCount += 1;
     totalWeight += w;
     if (a.score !== null && a.score !== undefined) {
@@ -163,6 +168,7 @@ export function summarizeGrade(items: Assignment[]): GradeSummary {
       gradedCount += 1;
     }
   }
+
 
   return {
     current: gradedWeight > 0 ? (earned / gradedWeight) * 100 : null,
