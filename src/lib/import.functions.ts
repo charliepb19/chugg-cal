@@ -277,7 +277,7 @@ export const extractAssignments = createServerFn({ method: "POST" })
                 type: "text",
                 text: `Today is ${today}.${
                   semester ? ` This course runs in ${semester}.` : ""
-                } This screenshot shows a course assignment list from a school LMS. Read every row and return only real due dates.`,
+                } This screenshot shows a course assignment list from a school LMS. Read every row. Use the due date when one is shown; when a row (often a quiz) only shows "Availability ends" / "Available until" / "Closes", use that closing date as the due date.`,
               },
               { type: "image_url", image_url: { url: data.dataUrl } },
             ],
