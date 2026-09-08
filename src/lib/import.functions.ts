@@ -248,11 +248,17 @@ async function callGateway(
     const percent = Math.round(Math.min(Math.max(rawPercent, 0), 100) * 10) / 10;
     if (percent <= 0) continue;
     const expected = Number(c?.expectedCount);
+    const note = typeof c?.note === "string" ? c.note.slice(0, 120) : "";
     categories.push({
       name,
       percent,
       expectedCount: Number.isFinite(expected) && expected > 0 ? Math.round(expected) : null,
-      note: typeof c?.note === "string" ? c.note.slice(0, 120) : "",
+      note,
+      // Exams normally carry their percentage each; a syllabus saying "each" settles it.
+      perItem:
+        c?.perItem === true ||
+        /\beach\b|\bapiece\b|\bper exam\b|\bper test\b/i.test(`${name} ${note}`) ||
+        (c?.perItem !== false && defaultPerItem(name)),
     });
   }
 
