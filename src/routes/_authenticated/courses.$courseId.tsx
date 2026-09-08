@@ -6,7 +6,9 @@ import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { ImportPanel } from "@/components/ImportPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import { summarizeGrade, letterGrade, parseWeight } from "@/lib/grade";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({
