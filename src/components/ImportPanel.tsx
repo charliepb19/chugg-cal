@@ -61,7 +61,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         return;
       }
       setImportKind(kind);
-      setRows(result.assignments.map((a) => ({ ...a, include: true })));
+      setRows(
+        result.assignments.map((a) => ({
+          ...a,
+          // Anything the model left undated: recover the date from its own text.
+          dueDate: a.dueDate ?? parseDueDateFromText(`${a.title} ${a.notes}`, semester),
+          include: true,
+        })),
+      );
+
       const unsure = result.assignments.filter((a) => a.yearUnconfirmed).length;
       toast.success(
         unsure
