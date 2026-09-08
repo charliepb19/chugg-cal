@@ -158,7 +158,7 @@ function CourseDetail() {
       </section>
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
-        <CategoryWeights rows={catRows} onChange={setCatRows} detected={catsDetected} />
+        <CategoryWeights rows={rows} onChange={setCatRows} detected={catsDetected} />
         <Button size="sm" className="mt-3" onClick={saveCategories} disabled={savingCats}>
           Save breakdown
         </Button>
