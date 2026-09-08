@@ -93,10 +93,13 @@ Rules:
 Return only JSON.`;
 
 
-const IMAGE_SYSTEM_PROMPT = `You read a screenshot of a course assignment list from a school LMS (D2L/Brightspace, Canvas, Blackboard, Moodle) and turn it into a student calendar.
+const IMAGE_SYSTEM_PROMPT = `You read a screenshot from a school course site (D2L/Brightspace, Canvas, Blackboard, Moodle) or syllabus and turn it into a student calendar.
 Return STRICT JSON of the form:
 {
   "readable": true | false,
+  "gradingCategories": [
+    { "name": "string, e.g. End of chapter quizzes", "percent": 15, "expectedCount": 12 or null, "note": "short string or empty string" }
+  ],
   "items": [
     {
       "title": "string",
@@ -117,8 +120,10 @@ Rules:
 - "yearVisible" is true only when the year is actually printed on screen for that row. When only month/day is shown, set yearVisible false and still give your best-guess year in "date".
 - Infer type from wording: "Quiz"/"Test bank" -> quiz, "Exam"/"Midterm"/"Final" -> exam, "Read"/"Chapter"/"Reading" -> reading, otherwise assignment.
 - Fill "weight" only when a points value or percentage is visible (e.g. "10%", "25 pts").
+- Some screenshots are a grading breakdown / weight table instead of a list of dated work (e.g. "End of chapter quizzes 15%", "Midterm 25%"). Put those rows ONLY in gradingCategories with the percentage, and return an empty items array for that image. Never turn a grading category into a dateless assignment.
+- gradingCategories is an empty array when the screenshot shows no weight table.
 - Skip navigation, folders, headers, announcements, grade totals and anything without an assignment name.
-- Set "readable" to false and return an empty items array when the image is too blurry, cropped or dark to read, or shows no assignment list.
+- Set "readable" to false only when the image is too blurry, cropped or dark to read, or shows neither an assignment list nor a grading breakdown.
 Return only JSON.`;
 
 
