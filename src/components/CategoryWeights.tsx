@@ -2,10 +2,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 
-export type CategoryRow = { name: string; percent: number | ""; note?: string };
+export type CategoryRow = {
+  name: string;
+  percent: number | "";
+  note?: string;
+  /** true when each item in the category is worth this percentage on its own */
+  perItem?: boolean;
+};
 
-export function weightTotal(rows: CategoryRow[]): number {
-  return rows.reduce((sum, r) => sum + (typeof r.percent === "number" ? r.percent : 0), 0);
+/**
+ * Total share of the final grade. A per-item category counts once per item in it,
+ * so three exams at 20% each contribute 60%.
+ */
+export function weightTotal(rows: CategoryRow[], counts: Record<string, number> = {}): number {
+  return rows.reduce((sum, r) => {
+    if (typeof r.percent !== "number") return sum;
+    const n = r.perItem ? Math.max(counts[r.name.trim().toLowerCase()] ?? 1, 1) : 1;
+    return sum + r.percent * n;
+  }, 0);
 }
 
 /**
