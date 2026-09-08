@@ -240,6 +240,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
 
   if (rows) {
     const count = rows.filter((r) => r.include).length;
+    const readyCats = cleanCats(cats);
+    const autoWeights = weightsFromCategories(rows, readyCats);
     return (
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
