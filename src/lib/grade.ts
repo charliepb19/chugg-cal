@@ -162,7 +162,7 @@ export type GradeSummary = {
 
 export function summarizeGrade(
   items: Assignment[],
-  categories: { name: string; percent: number }[] = [],
+  categories: CatLike[] = [],
 ): GradeSummary {
   let earned = 0;
   let gradedWeight = 0;
