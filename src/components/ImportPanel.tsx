@@ -304,7 +304,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           body="We'll pull every due date out of the schedule."
           busy={busy === "pdf"}
           onPick={() => pdfRef.current?.click()}
-          onDrop={(f) => handleFile(f, "pdf")}
+          onDrop={(files) => handleFile(files[0]!, "pdf")}
         />
         <DropCard
           icon={ImageUp}
