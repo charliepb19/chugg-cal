@@ -126,9 +126,31 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         })),
       );
       if (error) throw error;
+
+      const keep = cats.filter((c) => c.name.trim() && typeof c.percent === "number");
+      if (keep.length) {
+        await supabase.from("grade_categories").delete().eq("course_id", courseId);
+        const { error: catError } = await supabase.from("grade_categories").insert(
+          keep.map((c) => ({
+            user_id: userId,
+            course_id: courseId,
+            name: c.name.trim(),
+            weight: Number(c.percent),
+            source: importKind === "pdf" ? "parsed_pdf" : "parsed_image",
+          })),
+        );
+        if (catError) throw catError;
+        await queryClient.invalidateQueries({ queryKey: ["grade_categories"] });
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setRows(null);
-      toast.success(`Added ${picked.length} assignments.`);
+      setCats([]);
+      toast.success(
+        keep.length
+          ? `Added ${picked.length} assignments and ${keep.length} grading categories.`
+          : `Added ${picked.length} assignments.`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save");
     } finally {
