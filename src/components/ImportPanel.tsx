@@ -69,6 +69,16 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         return;
       }
       setImportKind(kind);
+      const detected = result.categories ?? [];
+      setCatsDetected(detected.length > 0);
+      setCats(
+        detected.map((c) => ({
+          name: c.name,
+          percent: c.percent,
+          note: c.note,
+          expectedCount: c.expectedCount,
+        })),
+      );
       setRows(
         result.assignments.map((a) => ({
           ...a,
@@ -82,7 +92,9 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       toast.success(
         unsure
           ? `Found ${result.assignments.length} assignments — check the ${unsure} flagged year${unsure === 1 ? "" : "s"}.`
-          : `Found ${result.assignments.length} assignments — review and save.`,
+          : detected.length
+            ? `Found ${result.assignments.length} assignments and a grading breakdown — review and save.`
+            : `Found ${result.assignments.length} assignments — review and save.`,
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
