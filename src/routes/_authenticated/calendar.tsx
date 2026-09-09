@@ -369,6 +369,24 @@ function CalendarPage() {
                       +{items.length - 3} more
                     </div>
                   )}
+                  {dayShifts.slice(0, 2).map((s) => (
+                    <div
+                      key={s.id}
+                      title={`Work${s.location ? ` · ${s.location}` : ""} · ${shiftRangeLabel(s)}`}
+                      className="flex items-center gap-1 truncate rounded border border-dashed border-slate-400 bg-slate-500/10 px-1.5 py-0.5 text-[11px] leading-tight text-slate-700 dark:text-slate-200"
+                    >
+                      <Briefcase className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {shiftRangeLabel(s)}
+                        {s.location ? ` · ${s.location}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                  {dayShifts.length > 2 && (
+                    <div className="px-1 text-[11px] text-muted-foreground">
+                      +{dayShifts.length - 2} more shifts
+                    </div>
+                  )}
                 </div>
               </div>
             );
