@@ -111,7 +111,10 @@ export function AssignmentDetailDialog({
               style={{ backgroundColor: course?.color ?? "#94a3b8" }}
             />
             <span>{course?.name ?? "Course"}</span>
-            <span className="capitalize">· {assignment.type}</span>
+            <span className="flex items-center gap-1 capitalize">
+              · <AssignmentTypeIcon type={assignment.type} className="h-3.5 w-3.5" />
+              {assignment.type}
+            </span>
           </div>
 
           <div>
