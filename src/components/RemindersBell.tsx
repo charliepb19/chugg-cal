@@ -11,8 +11,20 @@ function startOfToday(): Date {
   return d;
 }
 
+/** Accepts "YYYY-MM-DD" or a full timestamp and returns local midnight of that day. */
+function dueDay(due: string): Date | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
+    const [y, m, d] = due.split("-").map(Number);
+    return new Date(y!, m! - 1, d!);
+  }
+  const parsed = new Date(due);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
 function daysUntil(due: string, today: Date): number {
-  const d = new Date(due + "T00:00:00");
+  const d = dueDay(due);
+  if (!d) return Number.NaN;
   return Math.round((d.getTime() - today.getTime()) / 86400000);
 }
 
@@ -35,6 +47,7 @@ export function RemindersBell() {
   ];
   for (const a of pending) {
     const d = daysUntil(a.due_date!, today);
+    if (Number.isNaN(d)) continue;
     const idx = d < 0 ? 0 : d === 0 ? 1 : d === 1 ? 2 : d <= 7 ? 3 : -1;
     if (idx >= 0) groups[idx]?.items.push(a);
   }
@@ -78,7 +91,7 @@ export function RemindersBell() {
                         />
                         <span className="truncate">{a.title}</span>
                         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                          {new Date(a.due_date! + "T00:00:00").toLocaleDateString(undefined, {
+                          {dueDay(a.due_date!)?.toLocaleDateString(undefined, {
                             month: "short",
                             day: "numeric",
                           })}
