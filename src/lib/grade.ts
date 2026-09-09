@@ -55,11 +55,26 @@ export function guessCategory(
   return categories.find((c) => matchesCategory(c.name, item))?.name ?? "";
 }
 
+/** Leading words of a title with any numbering stripped: "Assignment Zero" -> "assignment". */
+function titleStem(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[#:().-]/g, " ")
+    .replace(
+      /\b(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|i{1,3}|iv|v)\b/g,
+      " ",
+    )
+    .replace(/[^a-z ]+/g, " ")
+    .trim()
+    .split(/\s+/)[0] ?? "";
+}
+
 /**
  * Sort a whole list of items into grading categories. Anything the wording
  * doesn't match falls into the one category still left empty — so plain
  * "Assignment 1..5" end up as Homework when Homework is the only weight with
- * nothing in it yet.
+ * nothing in it yet. Items sharing a title stem with an already-sorted item
+ * (e.g. "Assignment Zero" next to "Assignment 1") inherit its category.
  */
 export function resolveCategories<T extends { title: string; type: string; category?: string }>(
   items: T[],
@@ -73,10 +88,21 @@ export function resolveCategories<T extends { title: string; type: string; categ
     first.map((i) => i.category.toLowerCase()).filter(Boolean),
   );
   const empty = categories.filter((c) => c.name.trim() && !used.has(c.name.trim().toLowerCase()));
-  if (empty.length !== 1) return first;
-  const target = empty[0]!.name.trim();
-  return first.map((i) => (i.category ? i : { ...i, category: target }));
+  const withLeftover =
+    empty.length === 1
+      ? first.map((i) => (i.category ? i : { ...i, category: empty[0]!.name.trim() }))
+      : first;
+  // Siblings by name: "Assignment Zero" joins whatever "Assignment 1" is in.
+  const byStem = new Map<string, string>();
+  for (const i of withLeftover) {
+    const stem = titleStem(i.title);
+    if (stem.length > 2 && i.category && !byStem.has(stem)) byStem.set(stem, i.category);
+  }
+  return withLeftover.map((i) =>
+    i.category ? i : { ...i, category: byStem.get(titleStem(i.title)) ?? "" },
+  );
 }
+
 
 
 type WeighedItem = {

@@ -168,12 +168,19 @@ function CourseDetail() {
             )}
           </div>
         </div>
+        {effective.some((a, i) => a.score !== null && a.score !== undefined && !itemWeights[i]) && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Some marked work has no grading category yet, so it isn&apos;t counted — pick a
+            category next to it below.
+          </p>
+        )}
         {grade.weightedCount > 0 && grade.totalWeight < 99 && (
           <p className="mt-3 text-xs text-muted-foreground">
             Only {Math.round(grade.totalWeight)}% of the course has a weight on it, so add weights
             to the rest for a full picture.
           </p>
         )}
+
       </section>
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
