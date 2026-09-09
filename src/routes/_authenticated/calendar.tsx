@@ -38,6 +38,7 @@ function CalendarPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   async function moveAssignment(id: string, target: Date) {
     const a = assignments.find((x) => x.id === id);
