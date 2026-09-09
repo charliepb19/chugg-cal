@@ -240,6 +240,30 @@ function CalendarPage() {
         </div>
       )}
 
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowWork((v) => !v)}
+          aria-pressed={showWork}
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+            showWork
+              ? "border-slate-500 bg-slate-600 text-white"
+              : "border-border bg-card text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Briefcase className="h-3 w-3" />
+          Show work schedule
+        </button>
+        {showWork && Object.keys(conflictDays).length > 0 && (
+          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            {Object.keys(conflictDays).length} day
+            {Object.keys(conflictDays).length === 1 ? "" : "s"} where work overlaps school work
+          </span>
+        )}
+      </div>
+
+
 
       <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
