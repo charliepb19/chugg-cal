@@ -45,29 +45,13 @@ function Gradebook() {
     return { course, grade: summarizeGrade(items, cats) };
   });
 
-  const graded = rows.filter((r) => r.grade.current !== null);
-  const overall =
-    graded.length > 0
-      ? graded.reduce((sum, r) => sum + (r.grade.current ?? 0), 0) / graded.length
-      : null;
-
   return (
     <AppShell>
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gradebook</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Your mark in every course, based on the weights you&apos;ve set.
-          </p>
-        </div>
-        {overall !== null && (
-          <div className="text-right">
-            <p className="text-2xl font-semibold tabular-nums">{pct(overall)}</p>
-            <p className="text-xs text-muted-foreground">
-              Average across {graded.length} course{graded.length === 1 ? "" : "s"}
-            </p>
-          </div>
-        )}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Gradebook</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your mark in every course, based on the weights you've set.
+        </p>
       </div>
 
       {isLoading ? (
@@ -121,7 +105,7 @@ function Gradebook() {
 
       {courses.length > 0 && (
         <p className="mt-4 text-xs text-muted-foreground">
-          A course mark counts only the work you&apos;ve entered a score for. Open a course to add
+          A course mark counts only the work you've entered a score for. Open a course to add
           marks or fix its grading weights.
         </p>
       )}
