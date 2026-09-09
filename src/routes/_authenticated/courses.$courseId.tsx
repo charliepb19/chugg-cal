@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import { summarizeGrade, letterGrade, computeWeights, resolveCategories } from "@/lib/grade";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
+import { WhatIfGrade } from "@/components/WhatIfGrade";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({
