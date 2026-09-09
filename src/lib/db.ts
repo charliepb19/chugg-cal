@@ -85,3 +85,42 @@ export const assignmentsQuery = {
     return (data ?? []) as Assignment[];
   },
 };
+
+export type WorkShift = {
+  id: string;
+  shift_date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  notes: string;
+  source: "manual" | "parsed_image_work";
+};
+
+export const workShiftsQuery = {
+  queryKey: ["work_shifts"],
+  queryFn: async (): Promise<WorkShift[]> => {
+    const { data, error } = await supabase
+      .from("work_shifts")
+      .select("id,shift_date,start_time,end_time,location,notes,source")
+      .order("shift_date", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as WorkShift[];
+  },
+};
+
+/** "16:00" -> "4:00 PM"; anything unparseable comes back as-is. */
+export function formatShiftTime(t: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t ?? "");
+  if (!m) return t ?? "";
+  const hour = Number(m[1]);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h12}:${m[2]} ${suffix}`;
+}
+
+export function shiftRangeLabel(s: { start_time: string; end_time: string }): string {
+  const a = formatShiftTime(s.start_time);
+  const b = formatShiftTime(s.end_time);
+  if (a && b) return `${a} – ${b}`;
+  return a || b || "All day";
+}
