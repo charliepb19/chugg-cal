@@ -6,6 +6,7 @@ import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload } from "lucide-react";
+import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
