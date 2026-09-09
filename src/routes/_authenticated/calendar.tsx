@@ -35,11 +35,13 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function CalendarPage() {
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [] } = useQuery(assignmentsQuery);
+  const { data: shifts = [] } = useQuery(workShiftsQuery);
   const queryClient = useQueryClient();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [showWork, setShowWork] = useState(false);
 
   async function moveAssignment(id: string, target: Date) {
     const a = assignments.find((x) => x.id === id);
