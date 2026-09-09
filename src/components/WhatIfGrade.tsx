@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { letterGrade } from "@/lib/grade";
 import type { Assignment } from "@/lib/db";
 
@@ -11,54 +12,52 @@ type Props = {
 };
 
 /**
- * "What do I need on the final?" — projects the course grade from the marks
- * already entered plus a guessed score on everything still ungraded.
+ * "What if…" — real marks are locked in, and you can type a hypothetical score
+ * for every assignment that hasn't been graded yet to see the final result.
  */
 export function WhatIfGrade({ items, weights }: Props) {
-  const [assumed, setAssumed] = useState(85);
-  const [target, setTarget] = useState(90);
+  const [guesses, setGuesses] = useState<Record<string, string>>({});
+  const [fillValue, setFillValue] = useState(85);
+
+  const rows = useMemo(
+    () =>
+      items
+        .map((a, i) => ({ a, w: weights[i] }))
+        .filter((r) => r.w !== null && r.w !== undefined && r.w > 0)
+        .map((r) => ({ ...r, w: r.w as number })),
+    [items, weights],
+  );
+
+  const graded = rows.filter((r) => r.a.score !== null && r.a.score !== undefined);
+  const ungraded = rows.filter((r) => r.a.score === null || r.a.score === undefined);
 
   let earnedPoints = 0;
-  let remainingWeight = 0;
   let totalWeight = 0;
   let bonusPoints = 0;
 
-  type Cat = {
-    name: string;
-    earned: number;
-    gradedWeight: number;
-    remaining: number;
-    remainingCount: number;
-  };
-  const cats = new Map<string, Cat>();
-
-  for (const [i, a] of items.entries()) {
-    const w = weights[i];
-    if (w === null || w === undefined || w <= 0) continue;
-    const graded = a.score !== null && a.score !== undefined;
+  for (const { a, w } of graded) {
     if (a.extra_credit) {
-      if (graded) bonusPoints += (a.score! / 100) * w;
+      bonusPoints += (a.score! / 100) * w;
       continue;
     }
-    const name = (a.category?.trim() || "Uncategorized") as string;
-    let cat = cats.get(name.toLowerCase());
-    if (!cat) {
-      cat = { name, earned: 0, gradedWeight: 0, remaining: 0, remainingCount: 0 };
-      cats.set(name.toLowerCase(), cat);
-    }
+    earnedPoints += (a.score! / 100) * w;
     totalWeight += w;
-    if (graded) {
-      earnedPoints += (a.score! / 100) * w;
-      cat.earned += (a.score! / 100) * w;
-      cat.gradedWeight += w;
-    } else {
-      remainingWeight += w;
-      cat.remaining += w;
-      cat.remainingCount += 1;
-    }
   }
 
-  if (totalWeight <= 0) {
+  let projectedPoints = earnedPoints;
+  let projectedBonus = bonusPoints;
+  for (const { a, w } of ungraded) {
+    const raw = guesses[a.id];
+    const guess = raw === undefined || raw === "" ? null : Number(raw);
+    if (a.extra_credit) {
+      if (guess !== null && Number.isFinite(guess)) projectedBonus += (guess / 100) * w;
+      continue;
+    }
+    totalWeight += w;
+    if (guess !== null && Number.isFinite(guess)) projectedPoints += (guess / 100) * w;
+  }
+
+  if (rows.length === 0 || totalWeight <= 0) {
     return (
       <p className="text-xs text-muted-foreground">
         Add grading weights and a mark or two, and this will project your final grade.
@@ -66,119 +65,106 @@ export function WhatIfGrade({ items, weights }: Props) {
     );
   }
 
-  const projected =
-    ((earnedPoints + (assumed / 100) * remainingWeight + bonusPoints) / totalWeight) * 100;
+  const projected = ((projectedPoints + projectedBonus) / totalWeight) * 100;
+  const gradedWeight = graded
+    .filter((r) => !r.a.extra_credit)
+    .reduce((sum, r) => sum + r.w, 0);
+  const currentSoFar =
+    gradedWeight > 0 ? ((earnedPoints + bonusPoints) / gradedWeight) * 100 : null;
 
-  const catList = [...cats.values()].sort((a, b) => b.remaining - a.remaining);
-
-  /** What you'd need to average in this category if everything else still
-   * ungraded comes in at the assumed score. */
-  const neededFor = (cat: Cat) => {
-    if (cat.remaining <= 0) return null;
-    const otherRemaining = remainingWeight - cat.remaining;
-    const need =
-      (((target / 100) * totalWeight -
-        earnedPoints -
-        bonusPoints -
-        (assumed / 100) * otherRemaining) /
-        cat.remaining) *
-      100;
-    return need;
+  const fillAll = () => {
+    const next: Record<string, string> = { ...guesses };
+    for (const { a } of ungraded) next[a.id] = String(fillValue);
+    setGuesses(next);
   };
 
   return (
     <div className="space-y-4">
-      <div>
-        <div className="flex items-center justify-between gap-4">
-          <label htmlFor="whatif-assumed" className="text-xs text-muted-foreground">
-            If I score{" "}
-            <span className="font-medium text-foreground tabular-nums">{assumed}%</span> on the
-            remaining {Math.round(remainingWeight)}% of the course
-          </label>
-          <p className="text-right text-xl font-semibold tabular-nums">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs text-muted-foreground">Projected final grade</p>
+          <p className="text-2xl font-semibold tabular-nums">
             {projected.toFixed(1)}%
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
               {letterGrade(projected)}
             </span>
           </p>
         </div>
-        <input
-          id="whatif-assumed"
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={assumed}
-          onChange={(e) => setAssumed(Number(e.target.value))}
-          className="mt-2 w-full accent-primary"
-        />
+        <p className="text-right text-xs text-muted-foreground">
+          {currentSoFar === null
+            ? "Nothing graded yet"
+            : `Graded so far: ${currentSoFar.toFixed(1)}% of ${gradedWeight.toFixed(1)}%`}
+        </p>
       </div>
 
-      <div className="border-t border-border pt-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>To finish with</span>
+      {ungraded.length > 0 && (
+        <div className="flex items-center gap-2 border-t border-border pt-3">
+          <span className="text-xs text-muted-foreground">Fill every blank with</span>
           <Input
             type="number"
             min={0}
             max={110}
-            value={target}
-            onChange={(e) => setTarget(Number(e.target.value))}
-            aria-label="Target final grade"
+            value={fillValue}
+            onChange={(e) => setFillValue(Number(e.target.value))}
+            aria-label="Score to fill into every ungraded assignment"
             className="h-8 w-20 text-right text-sm"
           />
-          <span>% overall, here&apos;s what each category needs</span>
+          <span className="text-xs text-muted-foreground">%</span>
+          <Button type="button" size="sm" variant="secondary" onClick={fillAll}>
+            Apply
+          </Button>
+          {Object.keys(guesses).length > 0 && (
+            <Button type="button" size="sm" variant="ghost" onClick={() => setGuesses({})}>
+              Clear
+            </Button>
+          )}
         </div>
+      )}
 
-        {remainingWeight <= 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">Everything is graded already.</p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {catList.map((cat) => {
-              const need = neededFor(cat);
-              const avg =
-                cat.gradedWeight > 0 ? (cat.earned / cat.gradedWeight) * 100 : null;
-              return (
-                <li
-                  key={cat.name}
-                  className="flex items-start justify-between gap-4 rounded-md bg-muted/40 px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{cat.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {avg === null ? "Nothing graded yet" : `Averaging ${avg.toFixed(1)}%`}
-                      {cat.remaining > 0
-                        ? ` · ${cat.remainingCount} left worth ${cat.remaining.toFixed(1)}%`
-                        : " · all graded"}
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-right text-sm">
-                    {need === null ? (
-                      <span className="text-muted-foreground">Done</span>
-                    ) : need > 100 ? (
-                      <span className="text-destructive">
-                        Needs {need.toFixed(1)}% — not reachable here
-                      </span>
-                    ) : need <= 0 ? (
-                      <span className="text-muted-foreground">Anything works</span>
-                    ) : (
-                      <>
-                        Need{" "}
-                        <span className="font-semibold tabular-nums">{need.toFixed(1)}%</span>
-                      </>
-                    )}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {remainingWeight > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Each row assumes your other ungraded work comes in at {assumed}%.
-          </p>
-        )}
-      </div>
+      <ul className="space-y-1.5">
+        {ungraded.map(({ a, w }) => (
+          <li key={a.id} className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm">{a.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {(a.category?.trim() || "No category") + ` · worth ${w.toFixed(1)}%`}
+                {a.extra_credit ? " · extra credit" : ""}
+              </p>
+            </div>
+            <Input
+              type="number"
+              min={0}
+              max={110}
+              placeholder="—"
+              value={guesses[a.id] ?? ""}
+              onChange={(e) => setGuesses((g) => ({ ...g, [a.id]: e.target.value }))}
+              aria-label={`Hypothetical score for ${a.title}`}
+              className="h-8 w-24 shrink-0 text-right text-sm"
+            />
+          </li>
+        ))}
+        {graded.map(({ a, w }) => (
+          <li
+            key={a.id}
+            className="flex items-center justify-between gap-3 text-muted-foreground"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm">{a.title}</p>
+              <p className="text-xs">
+                {(a.category?.trim() || "No category") + ` · worth ${w.toFixed(1)}%`}
+                {a.extra_credit ? " · extra credit" : ""}
+              </p>
+            </div>
+            <span className="shrink-0 text-sm tabular-nums">{a.score}% ✓</span>
+          </li>
+        ))}
+      </ul>
+
+      {ungraded.length === 0 && (
+        <p className="text-xs text-muted-foreground">
+          Everything is graded — this is your actual mark.
+        </p>
+      )}
     </div>
   );
 }
-
