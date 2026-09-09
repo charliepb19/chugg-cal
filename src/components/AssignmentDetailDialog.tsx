@@ -114,6 +114,21 @@ export function AssignmentDetailDialog({
             </div>
           )}
 
+          <label className="flex items-start gap-2 rounded-lg border border-border p-3">
+            <input
+              type="checkbox"
+              checked={extraCredit}
+              onChange={(e) => toggleExtraCredit(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="font-medium">Extra credit</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Bonus points added on top — this one won't count toward the course total.
+              </span>
+            </span>
+          </label>
+
           <div className="rounded-lg border border-border bg-muted/40 p-3">
             <div className="flex items-end justify-between gap-4">
               <p className="text-xs font-medium text-muted-foreground">Grade received</p>
@@ -130,7 +145,9 @@ export function AssignmentDetailDialog({
             </div>
             {contribution !== null && weight != null && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Worth {weight}% of the course — this mark earns {contribution} of those points.
+                {extraCredit
+                  ? `Bonus worth up to ${weight}% — this mark adds ${contribution} extra points.`
+                  : `Worth ${weight}% of the course — this mark earns ${contribution} of those points.`}
               </p>
             )}
             <div className="mt-3 flex items-center gap-2">
