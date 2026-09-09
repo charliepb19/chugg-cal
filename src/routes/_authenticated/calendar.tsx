@@ -275,7 +275,11 @@ function CalendarPage() {
                             : {}),
                         }}
                       >
-                        {a.completed && <Check className="h-3 w-3 shrink-0" />}
+                        {a.completed ? (
+                          <Check className="h-3 w-3 shrink-0" />
+                        ) : (
+                          <AssignmentTypeIcon type={a.type} />
+                        )}
                         <span className={`truncate ${a.completed ? "line-through" : ""}`}>
                           {a.title}
                         </span>
