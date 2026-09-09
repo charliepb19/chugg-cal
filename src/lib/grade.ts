@@ -55,7 +55,14 @@ export function guessCategory(
   return categories.find((c) => matchesCategory(c.name, item))?.name ?? "";
 }
 
-type WeighedItem = { title: string; type: string; weight?: string; category?: string };
+type WeighedItem = {
+  title: string;
+  type: string;
+  weight?: string;
+  category?: string;
+  /** bonus work: earns points on top instead of counting toward the total */
+  extra_credit?: boolean;
+};
 type CatLike = {
   name: string;
   percent: number;
