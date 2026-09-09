@@ -302,16 +302,23 @@ function CalendarPage() {
                   inMonth ? "" : "bg-muted/30"
                 } ${dragOverKey === key ? "bg-primary/10 ring-1 ring-inset ring-primary" : ""}`}
               >
-                <div
-                  className={`mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                    isToday
-                      ? "bg-primary text-primary-foreground"
-                      : inMonth
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                  }`}
-                >
-                  {d.getDate()}
+                <div className="mb-1 flex items-center gap-1">
+                  <div
+                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                      isToday
+                        ? "bg-primary text-primary-foreground"
+                        : inMonth
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {d.getDate()}
+                  </div>
+                  {conflict && (
+                    <span title={conflict} aria-label={conflict}>
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-1">
                   {items.slice(0, 3).map((a) => (
