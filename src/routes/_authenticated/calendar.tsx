@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { coursesQuery, assignmentsQuery } from "@/lib/db";
+import { coursesQuery, assignmentsQuery, workShiftsQuery, shiftRangeLabel } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, EyeOff, Briefcase, AlertTriangle } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { AssignmentTypeIcon } from "@/lib/assignment-type";
 
@@ -35,11 +35,13 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function CalendarPage() {
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [] } = useQuery(assignmentsQuery);
+  const { data: shifts = [] } = useQuery(workShiftsQuery);
   const queryClient = useQueryClient();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [showWork, setShowWork] = useState(false);
 
   async function moveAssignment(id: string, target: Date) {
     const a = assignments.find((x) => x.id === id);
@@ -106,6 +108,49 @@ function CalendarPage() {
     }
     return m;
   }, [filtered]);
+
+  // Work shifts keyed the same way as assignments, so a day cell can show both.
+  const shiftMap = useMemo(() => {
+    const m: Record<string, typeof shifts> = {};
+    if (!showWork) return m;
+    for (const s of shifts) {
+      const [y, mo, dd] = s.shift_date.split("-").map(Number);
+      if (!y || !mo || !dd) continue;
+      (m[`${y}-${mo - 1}-${dd}`] ??= []).push(s);
+    }
+    return m;
+  }, [shifts, showWork]);
+
+  // A day is a clash when school work is due while the student is on shift.
+  const conflictDays = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (!showWork) return out;
+    for (const [key, dayShifts] of Object.entries(shiftMap)) {
+      const items = map[key];
+      if (!items?.length) continue;
+      const clashes = items.filter((a) => {
+        if (a.completed) return false;
+        const hasTime = a.due_date ? /[T ]\d{2}:\d{2}/.test(a.due_date) : false;
+        if (!hasTime) return true;
+        const due = new Date(a.due_date as string);
+        const mins = due.getHours() * 60 + due.getMinutes();
+        return dayShifts.some((s) => {
+          const toMin = (t: string) => {
+            const m2 = /^(\d{1,2}):(\d{2})$/.exec(t);
+            return m2 ? Number(m2[1]) * 60 + Number(m2[2]) : null;
+          };
+          const start = toMin(s.start_time);
+          const end = toMin(s.end_time);
+          if (start === null || end === null) return true;
+          return end >= start ? mins >= start && mins <= end : mins >= start || mins <= end;
+        });
+      });
+      if (clashes.length) {
+        out[key] = `Work shift clashes with ${clashes.map((c) => c.title).join(", ")}`;
+      }
+    }
+    return out;
+  }, [shiftMap, map, showWork]);
 
   const today = new Date();
 
@@ -195,6 +240,30 @@ function CalendarPage() {
         </div>
       )}
 
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowWork((v) => !v)}
+          aria-pressed={showWork}
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+            showWork
+              ? "border-slate-500 bg-slate-600 text-white"
+              : "border-border bg-card text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Briefcase className="h-3 w-3" />
+          Show work schedule
+        </button>
+        {showWork && Object.keys(conflictDays).length > 0 && (
+          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            {Object.keys(conflictDays).length} day
+            {Object.keys(conflictDays).length === 1 ? "" : "s"} where work overlaps school work
+          </span>
+        )}
+      </div>
+
+
 
       <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
@@ -208,6 +277,8 @@ function CalendarPage() {
           {days.map((d, i) => {
             const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             const items = map[key] ?? [];
+            const dayShifts = shiftMap[key] ?? [];
+            const conflict = conflictDays[key];
             const inMonth = d.getMonth() === cursor.getMonth();
             const isToday = d.toDateString() === today.toDateString();
             return (
@@ -231,16 +302,23 @@ function CalendarPage() {
                   inMonth ? "" : "bg-muted/30"
                 } ${dragOverKey === key ? "bg-primary/10 ring-1 ring-inset ring-primary" : ""}`}
               >
-                <div
-                  className={`mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                    isToday
-                      ? "bg-primary text-primary-foreground"
-                      : inMonth
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                  }`}
-                >
-                  {d.getDate()}
+                <div className="mb-1 flex items-center gap-1">
+                  <div
+                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                      isToday
+                        ? "bg-primary text-primary-foreground"
+                        : inMonth
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {d.getDate()}
+                  </div>
+                  {conflict && (
+                    <span title={conflict} aria-label={conflict}>
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-1">
                   {items.slice(0, 3).map((a) => (
@@ -289,6 +367,24 @@ function CalendarPage() {
                   {items.length > 3 && (
                     <div className="px-1 text-[11px] text-muted-foreground">
                       +{items.length - 3} more
+                    </div>
+                  )}
+                  {dayShifts.slice(0, 2).map((s) => (
+                    <div
+                      key={s.id}
+                      title={`Work${s.location ? ` · ${s.location}` : ""} · ${shiftRangeLabel(s)}`}
+                      className="flex items-center gap-1 truncate rounded border border-dashed border-slate-400 bg-slate-500/10 px-1.5 py-0.5 text-[11px] leading-tight text-slate-700 dark:text-slate-200"
+                    >
+                      <Briefcase className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {shiftRangeLabel(s)}
+                        {s.location ? ` · ${s.location}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                  {dayShifts.length > 2 && (
+                    <div className="px-1 text-[11px] text-muted-foreground">
+                      +{dayShifts.length - 2} more shifts
                     </div>
                   )}
                 </div>

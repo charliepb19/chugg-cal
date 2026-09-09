@@ -2,7 +2,15 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, LayoutList, BookOpen, LogOut, GraduationCap, BarChart3 } from "lucide-react";
+import {
+  CalendarDays,
+  LayoutList,
+  BookOpen,
+  LogOut,
+  GraduationCap,
+  BarChart3,
+  Briefcase,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -12,6 +20,7 @@ const nav = [
   { to: "/courses", label: "Courses", icon: BookOpen },
   { to: "/gradebook", label: "Grades", icon: GraduationCap },
   { to: "/workload", label: "Workload", icon: BarChart3 },
+  { to: "/work", label: "Work", icon: Briefcase },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

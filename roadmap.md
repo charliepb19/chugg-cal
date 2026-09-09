@@ -10,3 +10,4 @@
 7. [ ] Export / sync (iCal feed)
 8. [ ] Semester GPA from gradebook
 9. [ ] PWA / installable app
+10. [x] Work Schedule import (screenshot -> shifts, calendar overlay, conflict flags)
