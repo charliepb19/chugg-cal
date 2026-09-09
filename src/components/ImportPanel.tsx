@@ -18,9 +18,11 @@ type Row = ExtractedAssignment & { include: boolean; category?: string };
 type CatRow = CategoryRow & { expectedCount?: number | null };
 
 /** How many review rows sit in each category, for the running total. */
-function catCounts(items: { category?: string }[]): Record<string, number> {
+function catCounts(items: { category?: string; extra_credit?: boolean }[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const i of items) {
+    // Bonus work never adds to the course total, so it isn't counted here.
+    if (i.extra_credit) continue;
     const key = (i.category ?? "").trim().toLowerCase();
     if (key) out[key] = (out[key] ?? 0) + 1;
   }
