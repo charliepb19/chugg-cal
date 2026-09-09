@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -146,11 +146,24 @@ function CalendarPage() {
                     >
                       <button
                         type="button"
-                        title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}`}
-                        className="block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white"
-                        style={{ backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8" }}
+                        title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}${a.completed ? " · completed" : ""}`}
+                        className={`flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white ${
+                          a.completed ? "opacity-50" : ""
+                        }`}
+                        style={{
+                          backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8",
+                          ...(a.completed
+                            ? {
+                                backgroundImage:
+                                  "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.22) 4px, rgba(255,255,255,0.22) 8px)",
+                              }
+                            : {}),
+                        }}
                       >
-                        {a.title}
+                        {a.completed && <Check className="h-3 w-3 shrink-0" />}
+                        <span className={`truncate ${a.completed ? "line-through" : ""}`}>
+                          {a.title}
+                        </span>
                       </button>
                     </AssignmentDetailDialog>
                   ))}
