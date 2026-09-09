@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGradebookRouteImport } from './routes/_authenticated/gradebook'
+import { Route as AuthenticatedWorkRouteImport } from './routes/_authenticated/work'
 import { Route as AuthenticatedWorkloadRouteImport } from './routes/_authenticated/workload'
 import { Route as AuthenticatedCoursesIndexRouteImport } from './routes/_authenticated/courses.index'
 import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_authenticated/courses.$courseId'
@@ -48,6 +49,11 @@ const AuthenticatedGradebookRoute = AuthenticatedGradebookRouteImport.update({
   path: '/gradebook',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedWorkRoute = AuthenticatedWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWorkloadRoute = AuthenticatedWorkloadRouteImport.update({
   id: '/workload',
   path: '/workload',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gradebook': typeof AuthenticatedGradebookRoute
+  '/work': typeof AuthenticatedWorkRoute
   '/workload': typeof AuthenticatedWorkloadRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/courses/': typeof AuthenticatedCoursesIndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gradebook': typeof AuthenticatedGradebookRoute
+  '/work': typeof AuthenticatedWorkRoute
   '/workload': typeof AuthenticatedWorkloadRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/courses': typeof AuthenticatedCoursesIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/gradebook': typeof AuthenticatedGradebookRoute
+  '/_authenticated/work': typeof AuthenticatedWorkRoute
   '/_authenticated/workload': typeof AuthenticatedWorkloadRoute
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/_authenticated/courses/': typeof AuthenticatedCoursesIndexRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/gradebook'
+    | '/work'
     | '/workload'
     | '/courses/$courseId'
     | '/courses/'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/gradebook'
+    | '/work'
     | '/workload'
     | '/courses/$courseId'
     | '/courses'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
     | '/_authenticated/gradebook'
+    | '/_authenticated/work'
     | '/_authenticated/workload'
     | '/_authenticated/courses/$courseId'
     | '/_authenticated/courses/'
@@ -182,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGradebookRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/work': {
+      id: '/_authenticated/work'
+      path: '/work'
+      fullPath: '/work'
+      preLoaderRoute: typeof AuthenticatedWorkRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/workload': {
       id: '/_authenticated/workload'
       path: '/workload'
@@ -210,6 +229,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGradebookRoute: typeof AuthenticatedGradebookRoute
+  AuthenticatedWorkRoute: typeof AuthenticatedWorkRoute
   AuthenticatedWorkloadRoute: typeof AuthenticatedWorkloadRoute
   AuthenticatedCoursesCourseIdRoute: typeof AuthenticatedCoursesCourseIdRoute
   AuthenticatedCoursesIndexRoute: typeof AuthenticatedCoursesIndexRoute
@@ -219,6 +239,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGradebookRoute: AuthenticatedGradebookRoute,
+  AuthenticatedWorkRoute: AuthenticatedWorkRoute,
   AuthenticatedWorkloadRoute: AuthenticatedWorkloadRoute,
   AuthenticatedCoursesCourseIdRoute: AuthenticatedCoursesCourseIdRoute,
   AuthenticatedCoursesIndexRoute: AuthenticatedCoursesIndexRoute,
