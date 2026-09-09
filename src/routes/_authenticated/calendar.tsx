@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
+import { AssignmentTypeIcon } from "@/lib/assignment-type";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -38,6 +39,7 @@ function CalendarPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   async function moveAssignment(id: string, target: Date) {
     const a = assignments.find((x) => x.id === id);
@@ -86,10 +88,12 @@ function CalendarPage() {
 
   const filtered = useMemo(
     () =>
-      selectedCourses.size === 0
-        ? assignments
-        : assignments.filter((a) => selectedCourses.has(a.course_id)),
-    [assignments, selectedCourses],
+      assignments.filter(
+        (a) =>
+          (selectedCourses.size === 0 || selectedCourses.has(a.course_id)) &&
+          (!hideCompleted || !a.completed),
+      ),
+    [assignments, selectedCourses, hideCompleted],
   );
 
   const map = useMemo(() => {
@@ -175,8 +179,22 @@ function CalendarPage() {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setHideCompleted((v) => !v)}
+            aria-pressed={hideCompleted}
+            className={`ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+              hideCompleted
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <EyeOff className="h-3 w-3" />
+            Hide completed
+          </button>
         </div>
       )}
+
 
       <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
@@ -257,7 +275,11 @@ function CalendarPage() {
                             : {}),
                         }}
                       >
-                        {a.completed && <Check className="h-3 w-3 shrink-0" />}
+                        {a.completed ? (
+                          <Check className="h-3 w-3 shrink-0" />
+                        ) : (
+                          <AssignmentTypeIcon type={a.type} />
+                        )}
                         <span className={`truncate ${a.completed ? "line-through" : ""}`}>
                           {a.title}
                         </span>

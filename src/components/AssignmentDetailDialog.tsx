@@ -9,6 +9,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { AssignmentTypeIcon } from "@/lib/assignment-type";
 import { toast } from "sonner";
 import type { Assignment, Course } from "@/lib/db";
 import { letterGrade } from "@/lib/grade";
@@ -34,6 +36,25 @@ export function AssignmentDetailDialog({
   const [score, setScore] = useState(assignment.score?.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [extraCredit, setExtraCredit] = useState(assignment.extra_credit);
+  const [notes, setNotes] = useState(assignment.notes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  async function saveNotes() {
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase
+        .from("assignments")
+        .update({ notes: notes.trim() })
+        .eq("id", assignment.id);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Note saved.");
+    } catch {
+      toast.error("Couldn't save that note. Please try again.");
+    } finally {
+      setSavingNotes(false);
+    }
+  }
 
   const hasScore = assignment.score !== null && assignment.score !== undefined;
   const contribution =
@@ -90,7 +111,10 @@ export function AssignmentDetailDialog({
               style={{ backgroundColor: course?.color ?? "#94a3b8" }}
             />
             <span>{course?.name ?? "Course"}</span>
-            <span className="capitalize">· {assignment.type}</span>
+            <span className="flex items-center gap-1 capitalize">
+              · <AssignmentTypeIcon type={assignment.type} className="h-3.5 w-3.5" />
+              {assignment.type}
+            </span>
           </div>
 
           <div>
@@ -177,12 +201,35 @@ export function AssignmentDetailDialog({
             </div>
           </div>
 
-          {assignment.notes && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Notes</p>
-              <p className="mt-0.5 text-muted-foreground">{assignment.notes}</p>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Notes</p>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add a note — readings, page numbers, what to bring…"
+              aria-label={`Notes for ${assignment.title}`}
+              className="mt-1 min-h-20 text-sm"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={saveNotes}
+                disabled={savingNotes || notes === (assignment.notes ?? "")}
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {savingNotes ? "Saving…" : "Save note"}
+              </button>
+              {notes !== (assignment.notes ?? "") && (
+                <button
+                  type="button"
+                  onClick={() => setNotes(assignment.notes ?? "")}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Undo
+                </button>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
