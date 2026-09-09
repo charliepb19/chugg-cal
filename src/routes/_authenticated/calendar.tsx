@@ -115,7 +115,7 @@ function CalendarPage() {
     if (!showWork) return m;
     for (const s of shifts) {
       const [y, mo, dd] = s.shift_date.split("-").map(Number);
-      if (!y) continue;
+      if (!y || !mo || !dd) continue;
       (m[`${y}-${mo - 1}-${dd}`] ??= []).push(s);
     }
     return m;
