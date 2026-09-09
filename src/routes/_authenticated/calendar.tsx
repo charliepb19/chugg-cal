@@ -109,6 +109,49 @@ function CalendarPage() {
     return m;
   }, [filtered]);
 
+  // Work shifts keyed the same way as assignments, so a day cell can show both.
+  const shiftMap = useMemo(() => {
+    const m: Record<string, typeof shifts> = {};
+    if (!showWork) return m;
+    for (const s of shifts) {
+      const [y, mo, dd] = s.shift_date.split("-").map(Number);
+      if (!y) continue;
+      (m[`${y}-${mo - 1}-${dd}`] ??= []).push(s);
+    }
+    return m;
+  }, [shifts, showWork]);
+
+  // A day is a clash when school work is due while the student is on shift.
+  const conflictDays = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (!showWork) return out;
+    for (const [key, dayShifts] of Object.entries(shiftMap)) {
+      const items = map[key];
+      if (!items?.length) continue;
+      const clashes = items.filter((a) => {
+        if (a.completed) return false;
+        const hasTime = a.due_date ? /[T ]\d{2}:\d{2}/.test(a.due_date) : false;
+        if (!hasTime) return true;
+        const due = new Date(a.due_date as string);
+        const mins = due.getHours() * 60 + due.getMinutes();
+        return dayShifts.some((s) => {
+          const toMin = (t: string) => {
+            const m2 = /^(\d{1,2}):(\d{2})$/.exec(t);
+            return m2 ? Number(m2[1]) * 60 + Number(m2[2]) : null;
+          };
+          const start = toMin(s.start_time);
+          const end = toMin(s.end_time);
+          if (start === null || end === null) return true;
+          return end >= start ? mins >= start && mins <= end : mins >= start || mins <= end;
+        });
+      });
+      if (clashes.length) {
+        out[key] = `Work shift clashes with ${clashes.map((c) => c.title).join(", ")}`;
+      }
+    }
+    return out;
+  }, [shiftMap, map, showWork]);
+
   const today = new Date();
 
   return (
