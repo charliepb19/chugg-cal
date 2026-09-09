@@ -120,6 +120,54 @@ function CourseDetail() {
     queryClient.invalidateQueries({ queryKey: ["assignments"] });
   }
 
+  function toggleSelected(id: string, on: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  /** Run one change across every ticked assignment. */
+  async function bulkUpdate(patch: Record<string, unknown>, done: string) {
+    if (selected.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const { error } = await supabase
+        .from("assignments")
+        .update(patch)
+        .in("id", [...selected]);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      setSelected(new Set());
+      toast.success(done);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk update failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    if (selected.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const { error } = await supabase
+        .from("assignments")
+        .delete()
+        .in("id", [...selected]);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      setSelected(new Set());
+      toast.success("Selected assignments deleted.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk delete failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   async function deleteCourse() {
     await supabase.from("courses").delete().eq("id", courseId);
     await queryClient.invalidateQueries({ queryKey: ["courses"] });
