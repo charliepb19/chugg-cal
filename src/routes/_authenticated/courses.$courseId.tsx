@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery, gradeCategoriesQuery } from "@/lib/db";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
@@ -130,7 +131,7 @@ function CourseDetail() {
   }
 
   /** Run one change across every ticked assignment. */
-  async function bulkUpdate(patch: Record<string, unknown>, done: string) {
+  async function bulkUpdate(patch: TablesUpdate<"assignments">, done: string) {
     if (selected.size === 0) return;
     setBulkBusy(true);
     try {
