@@ -162,7 +162,10 @@ export function computeWeights(items: WeighedItem[], categories: CatLike[]): (nu
     const count = counts.get(key) ?? 0;
     if (!cat || !cat.percent) return null;
     if (cat.perItem) return Math.round(cat.percent * 100) / 100;
-    if (!count) return item.extra_credit ? Math.round(cat.percent * 100) / 100 : null;
+    // Extra credit keeps its original even share of the category — it is a
+    // bonus on top, not the whole category weight.
+    if (item.extra_credit) return Math.round((cat.percent / (count + 1)) * 100) / 100;
+    if (!count) return null;
     return Math.round((cat.percent / count) * 100) / 100;
   });
 }
@@ -268,7 +271,10 @@ export function summarizeGrade(
   }
 
   const base = gradedWeight > 0 ? (earned / gradedWeight) * 100 : null;
-  const bonus = gradedWeight > 0 ? (extraCreditPoints / gradedWeight) * 100 : 0;
+  // Extra credit adds whole-course percentage points on top (a 7.5%-weight
+  // bonus quiz adds up to 7.5 points), never a share of the graded weight.
+  const bonusBase = totalWeight > 0 ? totalWeight : gradedWeight;
+  const bonus = bonusBase > 0 ? (extraCreditPoints / bonusBase) * 100 : 0;
 
   return {
     current: base === null ? null : base + bonus,
