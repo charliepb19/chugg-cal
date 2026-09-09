@@ -104,7 +104,10 @@ function Dashboard() {
                 />
                 <AssignmentDetailDialog assignment={a} course={course}>
                   <button type="button" className="min-w-0 flex-1 text-left">
-                    <p className="truncate text-sm font-medium">{a.title}</p>
+                    <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                      <AssignmentTypeIcon type={a.type} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{a.title}</span>
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {course?.name ?? "Course"}
                       {a.notes ? ` · ${a.notes}` : ""}
