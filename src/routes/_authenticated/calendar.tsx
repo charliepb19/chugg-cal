@@ -37,6 +37,7 @@ function CalendarPage() {
   const queryClient = useQueryClient();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
 
   async function moveAssignment(id: string, target: Date) {
     const a = assignments.find((x) => x.id === id);
@@ -83,16 +84,24 @@ function CalendarPage() {
     });
   }, [cursor]);
 
+  const filtered = useMemo(
+    () =>
+      selectedCourses.size === 0
+        ? assignments
+        : assignments.filter((a) => selectedCourses.has(a.course_id)),
+    [assignments, selectedCourses],
+  );
+
   const map = useMemo(() => {
     const m: Record<string, typeof assignments> = {};
-    for (const a of assignments) {
+    for (const a of filtered) {
       if (!a.due_date) continue;
       const d = new Date(a.due_date);
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       (m[key] ??= []).push(a);
     }
     return m;
-  }, [assignments]);
+  }, [filtered]);
 
   const today = new Date();
 
@@ -128,13 +137,44 @@ function CalendarPage() {
       </div>
 
       {courses.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-          {courses.map((c) => (
-            <span key={c.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
-              {c.name}
-            </span>
-          ))}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Filter:</span>
+          <button
+            type="button"
+            onClick={() => setSelectedCourses(new Set())}
+            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              selectedCourses.size === 0
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All courses
+          </button>
+          {courses.map((c) => {
+            const active = selectedCourses.has(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() =>
+                  setSelectedCourses((prev) => {
+                    const next = new Set(prev);
+                    if (active) next.delete(c.id);
+                    else next.add(c.id);
+                    return next;
+                  })
+                }
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+                  active
+                    ? "border-primary text-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
+                {c.name}
+              </button>
+            );
+          })}
         </div>
       )}
 
