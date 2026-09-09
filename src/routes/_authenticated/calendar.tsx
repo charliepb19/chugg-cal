@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,37 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function CalendarPage() {
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [] } = useQuery(assignmentsQuery);
+  const queryClient = useQueryClient();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  async function moveAssignment(id: string, target: Date) {
+    const a = assignments.find((x) => x.id === id);
+    if (!a || !a.due_date) return;
+    const original = new Date(a.due_date);
+    if (
+      original.getFullYear() === target.getFullYear() &&
+      original.getMonth() === target.getMonth() &&
+      original.getDate() === target.getDate()
+    )
+      return;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const datePart = `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}`;
+    const keepsTime = /[T ]\d{2}:\d{2}/.test(a.due_date);
+    const next = keepsTime
+      ? `${datePart}T${pad(original.getHours())}:${pad(original.getMinutes())}:00`
+      : datePart;
+    const { error } = await supabase.from("assignments").update({ due_date: next }).eq("id", id);
+    if (error) {
+      toast.error("Couldn't move that assignment. Please try again.");
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+    toast.success(
+      `Moved "${a.title}" to ${target.toLocaleDateString(undefined, { month: "short", day: "numeric" })}.`,
+    );
+  }
+
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), 1);
@@ -122,9 +155,23 @@ function CalendarPage() {
             return (
               <div
                 key={i}
-                className={`min-h-24 border-b border-r border-border p-1.5 last:border-r-0 ${
+                onDragOver={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  setDragOverKey(key);
+                }}
+                onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const id = dragId ?? e.dataTransfer.getData("text/plain");
+                  setDragOverKey(null);
+                  setDragId(null);
+                  if (id) void moveAssignment(id, d);
+                }}
+                className={`min-h-24 border-b border-r border-border p-1.5 transition-colors last:border-r-0 ${
                   inMonth ? "" : "bg-muted/30"
-                }`}
+                } ${dragOverKey === key ? "bg-primary/10 ring-1 ring-inset ring-primary" : ""}`}
               >
                 <div
                   className={`mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
@@ -146,10 +193,20 @@ function CalendarPage() {
                     >
                       <button
                         type="button"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", a.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          setDragId(a.id);
+                        }}
+                        onDragEnd={() => {
+                          setDragId(null);
+                          setDragOverKey(null);
+                        }}
                         title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}${a.completed ? " · completed" : ""}`}
-                        className={`flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white ${
+                        className={`flex w-full cursor-grab items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white active:cursor-grabbing ${
                           a.completed ? "opacity-50" : ""
-                        }`}
+                        } ${dragId === a.id ? "opacity-40" : ""}`}
                         style={{
                           backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8",
                           ...(a.completed
