@@ -34,6 +34,25 @@ export function AssignmentDetailDialog({
   const [score, setScore] = useState(assignment.score?.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [extraCredit, setExtraCredit] = useState(assignment.extra_credit);
+  const [notes, setNotes] = useState(assignment.notes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  async function saveNotes() {
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase
+        .from("assignments")
+        .update({ notes: notes.trim() })
+        .eq("id", assignment.id);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Note saved.");
+    } catch {
+      toast.error("Couldn't save that note. Please try again.");
+    } finally {
+      setSavingNotes(false);
+    }
+  }
 
   const hasScore = assignment.score !== null && assignment.score !== undefined;
   const contribution =
