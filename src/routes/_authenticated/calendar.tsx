@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
+import { AssignmentTypeIcon } from "@/lib/assignment-type";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
