@@ -86,10 +86,12 @@ function CalendarPage() {
 
   const filtered = useMemo(
     () =>
-      selectedCourses.size === 0
-        ? assignments
-        : assignments.filter((a) => selectedCourses.has(a.course_id)),
-    [assignments, selectedCourses],
+      assignments.filter(
+        (a) =>
+          (selectedCourses.size === 0 || selectedCourses.has(a.course_id)) &&
+          (!hideCompleted || !a.completed),
+      ),
+    [assignments, selectedCourses, hideCompleted],
   );
 
   const map = useMemo(() => {
