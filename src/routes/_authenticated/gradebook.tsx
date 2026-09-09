@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery, gradeCategoriesQuery } from "@/lib/db";
-import { summarizeGrade, letterGrade, guessCategory } from "@/lib/grade";
+import { summarizeGrade, letterGrade, resolveCategories } from "@/lib/grade";
 import { ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/gradebook")({
@@ -38,12 +38,10 @@ function Gradebook() {
     const cats = categories
       .filter((c) => c.course_id === course.id)
       .map((c) => ({ name: c.name, percent: c.weight, perItem: c.per_item }));
-    const items = assignments
-      .filter((a) => a.course_id === course.id)
-      .map((a) => ({
-        ...a,
-        category: a.category?.trim() ? a.category : guessCategory(a, cats),
-      }));
+    const items = resolveCategories(
+      assignments.filter((a) => a.course_id === course.id),
+      cats,
+    );
     return { course, grade: summarizeGrade(items, cats) };
   });
 

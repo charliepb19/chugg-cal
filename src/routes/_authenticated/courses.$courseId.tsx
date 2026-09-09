@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Trash2 } from "lucide-react";
-import { summarizeGrade, letterGrade, computeWeights, guessCategory } from "@/lib/grade";
+import { summarizeGrade, letterGrade, computeWeights, resolveCategories } from "@/lib/grade";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
@@ -54,10 +54,7 @@ function CourseDetail() {
     perItem: c.per_item,
   }));
   // An item with no category picked yet still falls into its best match.
-  const effective = items.map((a) => ({
-    ...a,
-    category: a.category?.trim() ? a.category : guessCategory(a, catWeights),
-  }));
+  const effective = resolveCategories(items, catWeights);
   const grade = summarizeGrade(effective, catWeights);
   const itemWeights = computeWeights(effective, catWeights);
   const catsDetected = courseCats.some((c) => c.source !== "manual");
