@@ -22,6 +22,7 @@ export type Database = {
           course_id: string
           created_at: string
           due_date: string | null
+          extra_credit: boolean
           id: string
           notes: string
           score: number | null
@@ -38,6 +39,7 @@ export type Database = {
           course_id: string
           created_at?: string
           due_date?: string | null
+          extra_credit?: boolean
           id?: string
           notes?: string
           score?: number | null
@@ -54,6 +56,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           due_date?: string | null
+          extra_credit?: boolean
           id?: string
           notes?: string
           score?: number | null

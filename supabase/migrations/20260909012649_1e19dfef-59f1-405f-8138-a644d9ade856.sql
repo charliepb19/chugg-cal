@@ -1,0 +1,2 @@
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS extra_credit boolean NOT NULL DEFAULT false;
+UPDATE public.assignments SET extra_credit = true WHERE extra_credit = false AND (title ILIKE '%extra credit%' OR title ILIKE '%bonus%' OR notes ILIKE '%extra credit%');
