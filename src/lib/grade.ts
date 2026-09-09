@@ -229,6 +229,8 @@ export type GradeSummary = {
   totalWeight: number;
   gradedCount: number;
   weightedCount: number;
+  /** Bonus percentage points earned from extra-credit work. */
+  extraCreditPoints: number;
 };
 
 export function summarizeGrade(
@@ -240,28 +242,41 @@ export function summarizeGrade(
   let totalWeight = 0;
   let gradedCount = 0;
   let weightedCount = 0;
+  let extraCreditPoints = 0;
 
   const weights = computeWeights(items, categories);
 
   for (const [i, a] of items.entries()) {
     const w = weights[i];
     if (w === null || w === undefined || w <= 0) continue;
+    const graded = a.score !== null && a.score !== undefined;
+    if (a.extra_credit) {
+      // Bonus work adds points on top; it never enlarges the course total.
+      if (graded) {
+        extraCreditPoints += (a.score! / 100) * w;
+        gradedCount += 1;
+      }
+      continue;
+    }
     weightedCount += 1;
     totalWeight += w;
-    if (a.score !== null && a.score !== undefined) {
-      earned += (a.score / 100) * w;
+    if (graded) {
+      earned += (a.score! / 100) * w;
       gradedWeight += w;
       gradedCount += 1;
     }
   }
 
+  const base = gradedWeight > 0 ? (earned / gradedWeight) * 100 : null;
+  const bonus = gradedWeight > 0 ? (extraCreditPoints / gradedWeight) * 100 : 0;
 
   return {
-    current: gradedWeight > 0 ? (earned / gradedWeight) * 100 : null,
+    current: base === null ? null : base + bonus,
     gradedWeight,
     totalWeight,
     gradedCount,
     weightedCount,
+    extraCreditPoints,
   };
 }
 
