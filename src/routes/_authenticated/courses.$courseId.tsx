@@ -185,6 +185,8 @@ function CourseDetail() {
           onChange={setCatRows}
           detected={catsDetected}
           counts={effective.reduce<Record<string, number>>((acc, a) => {
+            // Extra-credit work sits outside the course total, so skip it here.
+            if (a.extra_credit) return acc;
             const key = (a.category ?? "").trim().toLowerCase();
             if (key) acc[key] = (acc[key] ?? 0) + 1;
             return acc;
