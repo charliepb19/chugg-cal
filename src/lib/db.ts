@@ -25,6 +25,8 @@ export type Assignment = {
   weight: string;
   category: string;
   score: number | null;
+  /** bonus work: adds points on top instead of counting toward the course total */
+  extra_credit: boolean;
 };
 
 export type GradeCategory = {
