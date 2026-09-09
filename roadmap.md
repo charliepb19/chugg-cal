@@ -4,8 +4,8 @@
 2. [x] Due-date reminders / notifications (header bell: overdue / today / tomorrow / week)
 3. [x] Reminder preferences (lead time, frequency, time of day) + browser notifications
 4. [ ] Assignment detail: attachments/links & richer notes
-4. [ ] Workload view (busy weeks / planning)
-5. [ ] Recurring & bulk edit of assignments
-6. [ ] Export / sync (iCal feed)
-7. [ ] Semester GPA from gradebook
-8. [ ] PWA / installable app
+5. [ ] Workload view (busy weeks / planning)
+6. [ ] Recurring & bulk edit of assignments
+7. [ ] Export / sync (iCal feed)
+8. [ ] Semester GPA from gradebook
+9. [ ] PWA / installable app
