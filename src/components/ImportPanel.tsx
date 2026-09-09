@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
-import { categoryWarnings, computeWeights, guessCategory, mergeCategories } from "@/lib/grade";
+import { categoryWarnings, computeWeights, guessCategory, mergeCategories, resolveCategories } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean; category?: string };
@@ -180,9 +180,10 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   async function save() {
     const all = rows ?? [];
     const keep = cleanCats(cats);
-    const picked = all
-      .map((r) => ({ ...r, category: r.category ?? guessCategory(r, keep) }))
-      .filter((r) => r.include);
+    const picked = resolveCategories(
+      all.map((r) => ({ ...r, category: r.category ?? "" })),
+      keep,
+    ).filter((r) => r.include);
     if (!picked.length && !keep.length) return;
     setSaving(true);
     try {
@@ -241,9 +242,8 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           category: string;
           source: string;
         }[];
-        for (const a of list) {
-          if (a.category?.trim()) continue;
-          const guess = guessCategory(a, keep);
+        for (const a of resolveCategories(list, keep)) {
+          const guess = a.category;
           if (!guess) continue;
           // A weight an earlier import wrote in would freeze the old split.
           const patch: { category: string; weight?: string } = { category: guess };
@@ -271,7 +271,10 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   if (rows) {
     const count = rows.filter((r) => r.include).length;
     const readyCats = cleanCats(cats);
-    const resolved = rows.map((r) => ({ ...r, category: r.category ?? guessCategory(r, readyCats) }));
+    const resolved = resolveCategories(
+      rows.map((r) => ({ ...r, category: r.category ?? "" })),
+      readyCats,
+    );
     const autoWeights = computeWeights(
       resolved.map((r) => ({ ...r, weight: "" })),
       readyCats,
