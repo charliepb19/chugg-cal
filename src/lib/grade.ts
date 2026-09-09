@@ -150,7 +150,8 @@ export function computeWeights(items: WeighedItem[], categories: CatLike[]): (nu
   const counts = new Map<string, number>();
   for (const item of items) {
     const key = (item.category ?? "").trim().toLowerCase();
-    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+    // Extra-credit work doesn't take a share of the category — it's a bonus.
+    if (key && !item.extra_credit) counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return items.map((item) => {
     const typed = parseWeight(item.weight ?? "");
@@ -159,8 +160,9 @@ export function computeWeights(items: WeighedItem[], categories: CatLike[]): (nu
     if (!key) return null;
     const cat = categories.find((c) => c.name.trim().toLowerCase() === key);
     const count = counts.get(key) ?? 0;
-    if (!cat || !cat.percent || !count) return null;
+    if (!cat || !cat.percent) return null;
     if (cat.perItem) return Math.round(cat.percent * 100) / 100;
+    if (!count) return item.extra_credit ? Math.round(cat.percent * 100) / 100 : null;
     return Math.round((cat.percent / count) * 100) / 100;
   });
 }
