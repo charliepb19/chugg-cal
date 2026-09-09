@@ -177,12 +177,35 @@ export function AssignmentDetailDialog({
             </div>
           </div>
 
-          {assignment.notes && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Notes</p>
-              <p className="mt-0.5 text-muted-foreground">{assignment.notes}</p>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Notes</p>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add a note — readings, page numbers, what to bring…"
+              aria-label={`Notes for ${assignment.title}`}
+              className="mt-1 min-h-20 text-sm"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={saveNotes}
+                disabled={savingNotes || notes === (assignment.notes ?? "")}
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {savingNotes ? "Saving…" : "Save note"}
+              </button>
+              {notes !== (assignment.notes ?? "") && (
+                <button
+                  type="button"
+                  onClick={() => setNotes(assignment.notes ?? "")}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Undo
+                </button>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
