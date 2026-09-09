@@ -49,6 +49,8 @@ type Group = { label: string; icon: typeof Clock; items: Assignment[]; className
 export function RemindersBell() {
   const { data: assignments = [] } = useQuery(assignmentsQuery);
   const { data: courses = [] } = useQuery(coursesQuery);
+  const { settings, update } = useReminderSettings();
+  const [showSettings, setShowSettings] = useState(false);
   const courseById = new Map<string, Course>(courses.map((c) => [c.id, c]));
 
   const today = startOfToday();
@@ -58,17 +60,46 @@ export function RemindersBell() {
     { label: "Overdue", icon: AlertCircle, items: [], className: "text-destructive" },
     { label: "Due today", icon: Clock, items: [], className: "text-amber-600" },
     { label: "Due tomorrow", icon: CalendarClock, items: [], className: "text-muted-foreground" },
-    { label: "Next 7 days", icon: CalendarClock, items: [], className: "text-muted-foreground" },
+    {
+      label: `Next ${settings.leadDays} days`,
+      icon: CalendarClock,
+      items: [],
+      className: "text-muted-foreground",
+    },
   ];
   for (const a of pending) {
     const d = daysUntil(a.due_date!, today);
     if (Number.isNaN(d)) continue;
-    const idx = d < 0 ? 0 : d === 0 ? 1 : d === 1 ? 2 : d <= 7 ? 3 : -1;
+    const idx = d < 0 ? 0 : d === 0 ? 1 : d === 1 ? 2 : d <= settings.leadDays ? 3 : -1;
     if (idx >= 0) groups[idx]?.items.push(a);
   }
 
   const urgent = (groups[0]?.items.length ?? 0) + (groups[1]?.items.length ?? 0);
   const hasAny = groups.some((g) => g.items.length > 0);
+  const dueCount = groups.reduce((n, g) => n + g.items.length, 0);
+
+  // Browser notifications on the chosen schedule.
+  useEffect(() => {
+    if (settings.frequency === "off" || typeof Notification === "undefined") return;
+    const tick = () => {
+      if (Notification.permission !== "granted") return;
+      if (dueCount === 0 || !shouldNotify(settings)) return;
+      new Notification("ChuggCal reminders", {
+        body: `${dueCount} assignment${dueCount === 1 ? "" : "s"} due soon${urgent > 0 ? ` (${urgent} urgent)` : ""}.`,
+      });
+      markNotified();
+    };
+    tick();
+    const id = window.setInterval(tick, 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [settings, dueCount, urgent]);
+
+  const setFrequency = async (frequency: ReminderFrequency) => {
+    if (frequency !== "off" && typeof Notification !== "undefined" && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+    update({ frequency });
+  };
 
   return (
     <Popover>
