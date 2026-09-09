@@ -2,7 +2,8 @@
 
 1. [x] What-if grade calculator (course page, slide-in panel)
 2. [x] Due-date reminders / notifications (header bell: overdue / today / tomorrow / week)
-3. [ ] Assignment detail: attachments/links & richer notes
+3. [x] Reminder preferences (lead time, frequency, time of day) + browser notifications
+4. [ ] Assignment detail: attachments/links & richer notes
 4. [ ] Workload view (busy weeks / planning)
 5. [ ] Recurring & bulk edit of assignments
 6. [ ] Export / sync (iCal feed)
