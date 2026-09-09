@@ -10,7 +10,8 @@ import { ImportPanel } from "@/components/ImportPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ChevronLeft, Trash2, Sparkles } from "lucide-react";
 import { summarizeGrade, letterGrade, computeWeights, resolveCategories } from "@/lib/grade";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { WhatIfGrade } from "@/components/WhatIfGrade";
@@ -160,13 +161,34 @@ function CourseDetail() {
                 : `Based on ${grade.gradedCount} graded item${grade.gradedCount === 1 ? "" : "s"} — ${Math.round(grade.gradedWeight)}% of the course.`}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-semibold tabular-nums">
-              {grade.current === null ? "—" : `${grade.current.toFixed(1)}%`}
-            </p>
-            {grade.current !== null && (
-              <p className="text-xs text-muted-foreground">{letterGrade(grade.current)}</p>
-            )}
+          <div className="flex items-center gap-3">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="secondary" size="sm" className="gap-1.5">
+                  <Sparkles className="h-4 w-4" />
+                  What if…
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle>What if…</SheetTitle>
+                </SheetHeader>
+                <div className="px-4 pb-6">
+                  <p className="mb-3 mt-1 text-xs text-muted-foreground">
+                    See where you land based on how the rest of the term goes.
+                  </p>
+                  <WhatIfGrade items={effective} weights={itemWeights} />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <div className="text-right">
+              <p className="text-3xl font-semibold tabular-nums">
+                {grade.current === null ? "—" : `${grade.current.toFixed(1)}%`}
+              </p>
+              {grade.current !== null && (
+                <p className="text-xs text-muted-foreground">{letterGrade(grade.current)}</p>
+              )}
+            </div>
           </div>
         </div>
         {effective.some((a, i) => a.score !== null && a.score !== undefined && !itemWeights[i]) && (
@@ -184,13 +206,7 @@ function CourseDetail() {
 
       </section>
 
-      <section className="mt-4 rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-medium">What if…</h2>
-        <p className="mb-3 mt-1 text-xs text-muted-foreground">
-          See where you land based on how the rest of the term goes.
-        </p>
-        <WhatIfGrade items={effective} weights={itemWeights} />
-      </section>
+
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
         <CategoryWeights
