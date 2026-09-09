@@ -55,6 +55,30 @@ export function guessCategory(
   return categories.find((c) => matchesCategory(c.name, item))?.name ?? "";
 }
 
+/**
+ * Sort a whole list of items into grading categories. Anything the wording
+ * doesn't match falls into the one category still left empty — so plain
+ * "Assignment 1..5" end up as Homework when Homework is the only weight with
+ * nothing in it yet.
+ */
+export function resolveCategories<T extends { title: string; type: string; category?: string }>(
+  items: T[],
+  categories: { name: string }[],
+): (T & { category: string })[] {
+  const first = items.map((i) => ({
+    ...i,
+    category: i.category?.trim() ? i.category.trim() : guessCategory(i, categories),
+  }));
+  const used = new Set(
+    first.map((i) => i.category.toLowerCase()).filter(Boolean),
+  );
+  const empty = categories.filter((c) => c.name.trim() && !used.has(c.name.trim().toLowerCase()));
+  if (empty.length !== 1) return first;
+  const target = empty[0]!.name.trim();
+  return first.map((i) => (i.category ? i : { ...i, category: target }));
+}
+
+
 type WeighedItem = {
   title: string;
   type: string;
