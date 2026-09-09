@@ -9,6 +9,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { AssignmentTypeIcon } from "@/lib/assignment-type";
 import { toast } from "sonner";
 import type { Assignment, Course } from "@/lib/db";
 import { letterGrade } from "@/lib/grade";
