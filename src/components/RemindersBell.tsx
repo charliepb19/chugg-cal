@@ -1,9 +1,24 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, AlertCircle, Clock, CalendarClock } from "lucide-react";
+import { Bell, AlertCircle, Clock, CalendarClock, Settings2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { assignmentsQuery, coursesQuery, type Assignment, type Course } from "@/lib/db";
+import {
+  markNotified,
+  shouldNotify,
+  useReminderSettings,
+  type ReminderFrequency,
+} from "@/lib/reminder-settings";
 
 function startOfToday(): Date {
   const d = new Date();
@@ -34,6 +49,8 @@ type Group = { label: string; icon: typeof Clock; items: Assignment[]; className
 export function RemindersBell() {
   const { data: assignments = [] } = useQuery(assignmentsQuery);
   const { data: courses = [] } = useQuery(coursesQuery);
+  const { settings, update } = useReminderSettings();
+  const [showSettings, setShowSettings] = useState(false);
   const courseById = new Map<string, Course>(courses.map((c) => [c.id, c]));
 
   const today = startOfToday();
@@ -43,17 +60,46 @@ export function RemindersBell() {
     { label: "Overdue", icon: AlertCircle, items: [], className: "text-destructive" },
     { label: "Due today", icon: Clock, items: [], className: "text-amber-600" },
     { label: "Due tomorrow", icon: CalendarClock, items: [], className: "text-muted-foreground" },
-    { label: "Next 7 days", icon: CalendarClock, items: [], className: "text-muted-foreground" },
+    {
+      label: `Next ${settings.leadDays} days`,
+      icon: CalendarClock,
+      items: [],
+      className: "text-muted-foreground",
+    },
   ];
   for (const a of pending) {
     const d = daysUntil(a.due_date!, today);
     if (Number.isNaN(d)) continue;
-    const idx = d < 0 ? 0 : d === 0 ? 1 : d === 1 ? 2 : d <= 7 ? 3 : -1;
+    const idx = d < 0 ? 0 : d === 0 ? 1 : d === 1 ? 2 : d <= settings.leadDays ? 3 : -1;
     if (idx >= 0) groups[idx]?.items.push(a);
   }
 
   const urgent = (groups[0]?.items.length ?? 0) + (groups[1]?.items.length ?? 0);
   const hasAny = groups.some((g) => g.items.length > 0);
+  const dueCount = groups.reduce((n, g) => n + g.items.length, 0);
+
+  // Browser notifications on the chosen schedule.
+  useEffect(() => {
+    if (settings.frequency === "off" || typeof Notification === "undefined") return;
+    const tick = () => {
+      if (Notification.permission !== "granted") return;
+      if (dueCount === 0 || !shouldNotify(settings)) return;
+      new Notification("ChuggCal reminders", {
+        body: `${dueCount} assignment${dueCount === 1 ? "" : "s"} due soon${urgent > 0 ? ` (${urgent} urgent)` : ""}.`,
+      });
+      markNotified();
+    };
+    tick();
+    const id = window.setInterval(tick, 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [settings, dueCount, urgent]);
+
+  const setFrequency = async (frequency: ReminderFrequency) => {
+    if (frequency !== "off" && typeof Notification !== "undefined" && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+    update({ frequency });
+  };
 
   return (
     <Popover>
@@ -68,10 +114,81 @@ export function RemindersBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="border-b border-border px-4 py-3 text-sm font-medium">Reminders</div>
+        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+          <span className="text-sm font-medium">Reminders</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
+            aria-label="Reminder settings"
+            onClick={() => setShowSettings((s) => !s)}
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        {showSettings && (
+          <div className="space-y-3 border-b border-border bg-muted/30 px-4 py-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Show assignments due within</Label>
+              <Select
+                value={String(settings.leadDays)}
+                onValueChange={(v) => update({ leadDays: Number(v) })}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[3, 7, 14, 30].map((d) => (
+                    <SelectItem key={d} value={String(d)}>
+                      {d} days
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Notify me</Label>
+              <Select value={settings.frequency} onValueChange={(v) => setFrequency(v as ReminderFrequency)}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="off">Never</SelectItem>
+                  <SelectItem value="daily">Once a day</SelectItem>
+                  <SelectItem value="twice">Twice a day</SelectItem>
+                  <SelectItem value="hourly">Every hour</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(settings.frequency === "daily" || settings.frequency === "twice") && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">At</Label>
+                <Select value={String(settings.hour)} onValueChange={(v) => update({ hour: Number(v) })}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <SelectItem key={h} value={String(h)}>
+                        {`${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {settings.frequency !== "off" &&
+              typeof Notification !== "undefined" &&
+              Notification.permission === "denied" && (
+                <p className="text-xs text-destructive">
+                  Notifications are blocked in your browser settings for this site.
+                </p>
+              )}
+          </div>
+        )}
         {!hasAny ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            Nothing due in the next week. You're all caught up.
+            Nothing due in the next {settings.leadDays} days. You're all caught up.
           </p>
         ) : (
           <div className="max-h-96 overflow-y-auto py-1">
