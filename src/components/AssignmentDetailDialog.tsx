@@ -33,6 +33,7 @@ export function AssignmentDetailDialog({
   const [open, setOpen] = useState(false);
   const [score, setScore] = useState(assignment.score?.toString() ?? "");
   const [saving, setSaving] = useState(false);
+  const [extraCredit, setExtraCredit] = useState(assignment.extra_credit);
 
   const hasScore = assignment.score !== null && assignment.score !== undefined;
   const contribution =
@@ -57,6 +58,21 @@ export function AssignmentDetailDialog({
     } finally {
       setSaving(false);
     }
+  }
+
+  async function toggleExtraCredit(next: boolean) {
+    setExtraCredit(next);
+    const { error } = await supabase
+      .from("assignments")
+      .update({ extra_credit: next })
+      .eq("id", assignment.id);
+    if (error) {
+      setExtraCredit(!next);
+      toast.error("Couldn't update this one. Please try again.");
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+    toast.success(next ? "Marked as extra credit." : "No longer extra credit.");
   }
 
   return (
