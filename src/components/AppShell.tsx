@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, LayoutList, BookOpen, LogOut, GraduationCap } from "lucide-react";
+import { CalendarDays, LayoutList, BookOpen, LogOut, GraduationCap, BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/courses", label: "Courses", icon: BookOpen },
   { to: "/gradebook", label: "Grades", icon: GraduationCap },
+  { to: "/workload", label: "Workload", icon: BarChart3 },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
