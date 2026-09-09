@@ -84,16 +84,24 @@ function CalendarPage() {
     });
   }, [cursor]);
 
+  const filtered = useMemo(
+    () =>
+      selectedCourses.size === 0
+        ? assignments
+        : assignments.filter((a) => selectedCourses.has(a.course_id)),
+    [assignments, selectedCourses],
+  );
+
   const map = useMemo(() => {
     const m: Record<string, typeof assignments> = {};
-    for (const a of assignments) {
+    for (const a of filtered) {
       if (!a.due_date) continue;
       const d = new Date(a.due_date);
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       (m[key] ??= []).push(a);
     }
     return m;
-  }, [assignments]);
+  }, [filtered]);
 
   const today = new Date();
 
