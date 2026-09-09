@@ -25,6 +25,8 @@ export type Assignment = {
   weight: string;
   category: string;
   score: number | null;
+  /** bonus work: adds points on top instead of counting toward the course total */
+  extra_credit: boolean;
 };
 
 export type GradeCategory = {
@@ -77,7 +79,7 @@ export const assignmentsQuery = {
   queryFn: async (): Promise<Assignment[]> => {
     const { data, error } = await supabase
       .from("assignments")
-      .select("id,course_id,title,notes,due_date,completed,source,confirmed,type,weight,category,score")
+      .select("id,course_id,title,notes,due_date,completed,source,confirmed,type,weight,category,score,extra_credit")
       .order("due_date", { ascending: true, nullsFirst: false });
     if (error) throw error;
     return (data ?? []) as Assignment[];

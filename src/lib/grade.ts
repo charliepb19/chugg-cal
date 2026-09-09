@@ -55,7 +55,14 @@ export function guessCategory(
   return categories.find((c) => matchesCategory(c.name, item))?.name ?? "";
 }
 
-type WeighedItem = { title: string; type: string; weight?: string; category?: string };
+type WeighedItem = {
+  title: string;
+  type: string;
+  weight?: string;
+  category?: string;
+  /** bonus work: earns points on top instead of counting toward the total */
+  extra_credit?: boolean;
+};
 type CatLike = {
   name: string;
   percent: number;
@@ -143,7 +150,8 @@ export function computeWeights(items: WeighedItem[], categories: CatLike[]): (nu
   const counts = new Map<string, number>();
   for (const item of items) {
     const key = (item.category ?? "").trim().toLowerCase();
-    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+    // Extra-credit work doesn't take a share of the category — it's a bonus.
+    if (key && !item.extra_credit) counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return items.map((item) => {
     const typed = parseWeight(item.weight ?? "");
@@ -152,8 +160,9 @@ export function computeWeights(items: WeighedItem[], categories: CatLike[]): (nu
     if (!key) return null;
     const cat = categories.find((c) => c.name.trim().toLowerCase() === key);
     const count = counts.get(key) ?? 0;
-    if (!cat || !cat.percent || !count) return null;
+    if (!cat || !cat.percent) return null;
     if (cat.perItem) return Math.round(cat.percent * 100) / 100;
+    if (!count) return item.extra_credit ? Math.round(cat.percent * 100) / 100 : null;
     return Math.round((cat.percent / count) * 100) / 100;
   });
 }
@@ -220,6 +229,8 @@ export type GradeSummary = {
   totalWeight: number;
   gradedCount: number;
   weightedCount: number;
+  /** Bonus percentage points earned from extra-credit work. */
+  extraCreditPoints: number;
 };
 
 export function summarizeGrade(
@@ -231,28 +242,41 @@ export function summarizeGrade(
   let totalWeight = 0;
   let gradedCount = 0;
   let weightedCount = 0;
+  let extraCreditPoints = 0;
 
   const weights = computeWeights(items, categories);
 
   for (const [i, a] of items.entries()) {
     const w = weights[i];
     if (w === null || w === undefined || w <= 0) continue;
+    const graded = a.score !== null && a.score !== undefined;
+    if (a.extra_credit) {
+      // Bonus work adds points on top; it never enlarges the course total.
+      if (graded) {
+        extraCreditPoints += (a.score! / 100) * w;
+        gradedCount += 1;
+      }
+      continue;
+    }
     weightedCount += 1;
     totalWeight += w;
-    if (a.score !== null && a.score !== undefined) {
-      earned += (a.score / 100) * w;
+    if (graded) {
+      earned += (a.score! / 100) * w;
       gradedWeight += w;
       gradedCount += 1;
     }
   }
 
+  const base = gradedWeight > 0 ? (earned / gradedWeight) * 100 : null;
+  const bonus = gradedWeight > 0 ? (extraCreditPoints / gradedWeight) * 100 : 0;
 
   return {
-    current: gradedWeight > 0 ? (earned / gradedWeight) * 100 : null,
+    current: base === null ? null : base + bonus,
     gradedWeight,
     totalWeight,
     gradedCount,
     weightedCount,
+    extraCreditPoints,
   };
 }
 

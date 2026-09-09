@@ -201,6 +201,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
             type: r.type,
             weight: r.weight ?? "",
             category: r.category ?? "",
+            extra_credit: /\b(extra\s*credit|bonus)\b/i.test(`${r.title} ${r.notes ?? ""}`),
           })),
         );
         if (error) throw error;
