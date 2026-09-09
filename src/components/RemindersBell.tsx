@@ -47,6 +47,7 @@ export function RemindersBell() {
   ];
   for (const a of pending) {
     const d = daysUntil(a.due_date!, today);
+    if (Number.isNaN(d)) continue;
     const idx = d < 0 ? 0 : d === 0 ? 1 : d === 1 ? 2 : d <= 7 ? 3 : -1;
     if (idx >= 0) groups[idx]?.items.push(a);
   }
