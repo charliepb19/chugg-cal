@@ -11,8 +11,20 @@ function startOfToday(): Date {
   return d;
 }
 
+/** Accepts "YYYY-MM-DD" or a full timestamp and returns local midnight of that day. */
+function dueDay(due: string): Date | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
+    const [y, m, d] = due.split("-").map(Number);
+    return new Date(y!, m! - 1, d!);
+  }
+  const parsed = new Date(due);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
 function daysUntil(due: string, today: Date): number {
-  const d = new Date(due + "T00:00:00");
+  const d = dueDay(due);
+  if (!d) return Number.NaN;
   return Math.round((d.getTime() - today.getTime()) / 86400000);
 }
 
