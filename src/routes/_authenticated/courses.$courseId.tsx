@@ -184,6 +184,14 @@ function CourseDetail() {
 
       </section>
 
+      <section className="mt-4 rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-medium">What if…</h2>
+        <p className="mb-3 mt-1 text-xs text-muted-foreground">
+          See where you land based on how the rest of the term goes.
+        </p>
+        <WhatIfGrade items={effective} weights={itemWeights} />
+      </section>
+
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
         <CategoryWeights
           rows={rows}
