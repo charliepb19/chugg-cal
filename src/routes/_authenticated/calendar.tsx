@@ -178,8 +178,22 @@ function CalendarPage() {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setHideCompleted((v) => !v)}
+            aria-pressed={hideCompleted}
+            className={`ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+              hideCompleted
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <EyeOff className="h-3 w-3" />
+            Hide completed
+          </button>
         </div>
       )}
+
 
       <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
