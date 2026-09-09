@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -138,14 +139,20 @@ function CalendarPage() {
                 </div>
                 <div className="space-y-1">
                   {items.slice(0, 3).map((a) => (
-                    <div
+                    <AssignmentDetailDialog
                       key={a.id}
-                      title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}`}
-                      className="truncate rounded px-1.5 py-0.5 text-[11px] leading-tight text-white"
-                      style={{ backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8" }}
+                      assignment={a}
+                      course={byCourse[a.course_id]}
                     >
-                      {a.title}
-                    </div>
+                      <button
+                        type="button"
+                        title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}`}
+                        className="block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white"
+                        style={{ backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8" }}
+                      >
+                        {a.title}
+                      </button>
+                    </AssignmentDetailDialog>
                   ))}
                   {items.length > 3 && (
                     <div className="px-1 text-[11px] text-muted-foreground">

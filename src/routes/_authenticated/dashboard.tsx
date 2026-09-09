@@ -6,6 +6,7 @@ import { coursesQuery, assignmentsQuery } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload } from "lucide-react";
+import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -101,13 +102,15 @@ function Dashboard() {
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: course?.color ?? "#94a3b8" }}
                 />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{a.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {course?.name ?? "Course"}
-                    {a.notes ? ` · ${a.notes}` : ""}
-                  </p>
-                </div>
+                <AssignmentDetailDialog assignment={a} course={course}>
+                  <button type="button" className="min-w-0 flex-1 text-left">
+                    <p className="truncate text-sm font-medium">{a.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {course?.name ?? "Course"}
+                      {a.notes ? ` · ${a.notes}` : ""}
+                    </p>
+                  </button>
+                </AssignmentDetailDialog>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {formatDue(a.due_date)}
                 </span>
