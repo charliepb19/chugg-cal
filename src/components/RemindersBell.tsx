@@ -1,9 +1,24 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, AlertCircle, Clock, CalendarClock } from "lucide-react";
+import { Bell, AlertCircle, Clock, CalendarClock, Settings2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { assignmentsQuery, coursesQuery, type Assignment, type Course } from "@/lib/db";
+import {
+  markNotified,
+  shouldNotify,
+  useReminderSettings,
+  type ReminderFrequency,
+} from "@/lib/reminder-settings";
 
 function startOfToday(): Date {
   const d = new Date();
