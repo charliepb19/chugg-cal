@@ -285,9 +285,85 @@ function CourseDetail() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-sm font-medium">
-          Assignments <span className="text-muted-foreground">({items.length})</span>
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-medium">
+            Assignments <span className="text-muted-foreground">({items.length})</span>
+          </h2>
+          {items.length > 0 && (
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                checked={selected.size === items.length && items.length > 0}
+                onCheckedChange={(v) =>
+                  setSelected(v ? new Set(items.map((a) => a.id)) : new Set())
+                }
+                aria-label="Select all assignments"
+              />
+              Select all
+            </label>
+          )}
+        </div>
+
+        {selected.size > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-accent/50 px-3 py-2">
+            <span className="text-xs font-medium">{selected.size} selected</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={bulkBusy}
+              onClick={() => bulkUpdate({ completed: true }, "Marked as done.")}
+            >
+              Mark done
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={bulkBusy}
+              onClick={() => bulkUpdate({ completed: false }, "Marked as not done.")}
+            >
+              Not done
+            </Button>
+            {courseCats.length > 0 && (
+              <select
+                defaultValue=""
+                disabled={bulkBusy}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!value) return;
+                  bulkUpdate({ category: value, weight: "" }, "Category updated.");
+                  e.target.value = "";
+                }}
+                aria-label="Set category for selected"
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                <option value="">Set category…</option>
+                {courseCats.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={bulkBusy}
+              onClick={bulkDelete}
+            >
+              Delete
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="ml-auto"
+              disabled={bulkBusy}
+              onClick={() => setSelected(new Set())}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+
         {items.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Nothing here yet.</p>
         ) : (
@@ -295,8 +371,14 @@ function CourseDetail() {
             {items.map((a, i) => (
               <li key={a.id} className="flex items-center gap-3 px-4 py-3">
                 <Checkbox
+                  checked={selected.has(a.id)}
+                  onCheckedChange={(v) => toggleSelected(a.id, Boolean(v))}
+                  aria-label={`Select ${a.title}`}
+                />
+                <Checkbox
                   checked={a.completed}
                   onCheckedChange={(v) => toggle(a.id, Boolean(v))}
+                  aria-label={`Mark ${a.title} complete`}
                 />
                 <AssignmentDetailDialog
                   assignment={a}
