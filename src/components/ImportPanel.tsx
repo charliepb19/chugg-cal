@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
-import { categoryWarnings, computeWeights, guessCategory, mergeCategories, resolveCategories } from "@/lib/grade";
+import { categoryWarnings, computeWeights, mergeCategories, resolveCategories } from "@/lib/grade";
 
 
 type Row = ExtractedAssignment & { include: boolean; category?: string };
@@ -242,9 +242,10 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           category: string;
           source: string;
         }[];
+        const alreadySorted = new Set(list.filter((a) => a.category?.trim()).map((a) => a.id));
         for (const a of resolveCategories(list, keep)) {
           const guess = a.category;
-          if (!guess) continue;
+          if (!guess || alreadySorted.has(a.id)) continue;
           // A weight an earlier import wrote in would freeze the old split.
           const patch: { category: string; weight?: string } = { category: guess };
           if (a.source !== "manual") patch.weight = "";
