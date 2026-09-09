@@ -122,6 +122,21 @@ export function WhatIfGrade({ items, weights }: Props) {
       )}
 
       <ul className="space-y-1.5">
+        {graded.map(({ a, w }) => (
+          <li
+            key={a.id}
+            className="flex items-center justify-between gap-3 text-muted-foreground"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm">{a.title}</p>
+              <p className="text-xs">
+                {(a.category?.trim() || "No category") + ` · worth ${w.toFixed(1)}%`}
+                {a.extra_credit ? " · extra credit" : ""}
+              </p>
+            </div>
+            <span className="shrink-0 text-sm tabular-nums">{a.score}% ✓</span>
+          </li>
+        ))}
         {ungraded.map(({ a, w }) => (
           <li key={a.id} className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -141,21 +156,6 @@ export function WhatIfGrade({ items, weights }: Props) {
               aria-label={`Hypothetical score for ${a.title}`}
               className="h-8 w-24 shrink-0 text-right text-sm"
             />
-          </li>
-        ))}
-        {graded.map(({ a, w }) => (
-          <li
-            key={a.id}
-            className="flex items-center justify-between gap-3 text-muted-foreground"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm">{a.title}</p>
-              <p className="text-xs">
-                {(a.category?.trim() || "No category") + ` · worth ${w.toFixed(1)}%`}
-                {a.extra_credit ? " · extra credit" : ""}
-              </p>
-            </div>
-            <span className="shrink-0 text-sm tabular-nums">{a.score}% ✓</span>
           </li>
         ))}
       </ul>
