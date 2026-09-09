@@ -60,6 +60,8 @@ function CourseDetail() {
   const grade = summarizeGrade(effective, catWeights);
   const itemWeights = computeWeights(effective, catWeights);
   const catsDetected = courseCats.some((c) => c.source !== "manual");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [catRows, setCatRows] = useState<CategoryRow[] | null>(null);
   const [savingCats, setSavingCats] = useState(false);
   const rows: CategoryRow[] =
