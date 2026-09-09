@@ -91,7 +91,7 @@ export function RemindersBell() {
                         />
                         <span className="truncate">{a.title}</span>
                         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                          {new Date(a.due_date! + "T00:00:00").toLocaleDateString(undefined, {
+                          {dueDay(a.due_date!)?.toLocaleDateString(undefined, {
                             month: "short",
                             day: "numeric",
                           })}
