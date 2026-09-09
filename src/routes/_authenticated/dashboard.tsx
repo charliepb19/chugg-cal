@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
+import { AssignmentTypeIcon } from "@/lib/assignment-type";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
