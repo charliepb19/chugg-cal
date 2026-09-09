@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import { summarizeGrade, letterGrade, computeWeights, guessCategory } from "@/lib/grade";
+import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({
@@ -216,14 +217,20 @@ function CourseDetail() {
                   checked={a.completed}
                   onCheckedChange={(v) => toggle(a.id, Boolean(v))}
                 />
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate text-sm ${a.completed ? "text-muted-foreground line-through" : "font-medium"}`}
-                  >
-                    {a.title}
-                  </p>
-                  {a.notes && <p className="truncate text-xs text-muted-foreground">{a.notes}</p>}
-                </div>
+                <AssignmentDetailDialog
+                  assignment={a}
+                  course={course}
+                  weight={itemWeights[i] ?? null}
+                >
+                  <button type="button" className="min-w-0 flex-1 text-left">
+                    <p
+                      className={`truncate text-sm ${a.completed ? "text-muted-foreground line-through" : "font-medium"}`}
+                    >
+                      {a.title}
+                    </p>
+                    {a.notes && <p className="truncate text-xs text-muted-foreground">{a.notes}</p>}
+                  </button>
+                </AssignmentDetailDialog>
                 {courseCats.length > 0 && (
                   <select
                     value={effective[i]?.category ?? ""}
