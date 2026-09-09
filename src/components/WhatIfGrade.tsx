@@ -49,12 +49,16 @@ export function WhatIfGrade({ items, weights }: Props) {
   for (const { a, w } of ungraded) {
     const raw = guesses[a.id];
     const guess = raw === undefined || raw === "" ? null : Number(raw);
+    // A blank guess means "not yet considered" — leave it out of both
+    // the numerator and the denominator, so blanks don't drag the
+    // projected grade down like a zero would.
+    if (guess === null || !Number.isFinite(guess)) continue;
     if (a.extra_credit) {
-      if (guess !== null && Number.isFinite(guess)) projectedBonus += (guess / 100) * w;
+      projectedBonus += (guess / 100) * w;
       continue;
     }
     totalWeight += w;
-    if (guess !== null && Number.isFinite(guess)) projectedPoints += (guess / 100) * w;
+    projectedPoints += (guess / 100) * w;
   }
 
   if (rows.length === 0 || totalWeight <= 0) {
