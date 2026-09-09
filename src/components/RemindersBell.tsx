@@ -114,10 +114,81 @@ export function RemindersBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="border-b border-border px-4 py-3 text-sm font-medium">Reminders</div>
+        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+          <span className="text-sm font-medium">Reminders</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
+            aria-label="Reminder settings"
+            onClick={() => setShowSettings((s) => !s)}
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        {showSettings && (
+          <div className="space-y-3 border-b border-border bg-muted/30 px-4 py-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Show assignments due within</Label>
+              <Select
+                value={String(settings.leadDays)}
+                onValueChange={(v) => update({ leadDays: Number(v) })}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[3, 7, 14, 30].map((d) => (
+                    <SelectItem key={d} value={String(d)}>
+                      {d} days
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Notify me</Label>
+              <Select value={settings.frequency} onValueChange={(v) => setFrequency(v as ReminderFrequency)}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="off">Never</SelectItem>
+                  <SelectItem value="daily">Once a day</SelectItem>
+                  <SelectItem value="twice">Twice a day</SelectItem>
+                  <SelectItem value="hourly">Every hour</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(settings.frequency === "daily" || settings.frequency === "twice") && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">At</Label>
+                <Select value={String(settings.hour)} onValueChange={(v) => update({ hour: Number(v) })}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <SelectItem key={h} value={String(h)}>
+                        {`${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {settings.frequency !== "off" &&
+              typeof Notification !== "undefined" &&
+              Notification.permission === "denied" && (
+                <p className="text-xs text-destructive">
+                  Notifications are blocked in your browser settings for this site.
+                </p>
+              )}
+          </div>
+        )}
         {!hasAny ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            Nothing due in the next week. You're all caught up.
+            Nothing due in the next {settings.leadDays} days. You're all caught up.
           </p>
         ) : (
           <div className="max-h-96 overflow-y-auto py-1">
