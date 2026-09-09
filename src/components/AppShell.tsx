@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { RemindersBell } from "@/components/RemindersBell";
 import { CalendarDays, LayoutList, BookOpen, LogOut, GraduationCap } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -42,10 +43,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={signOut}>
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
+          <div className="ml-auto flex items-center gap-1">
+            <RemindersBell />
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

@@ -1,7 +1,7 @@
 # ChuggCal roadmap (8 ideas, one at a time)
 
-1. [ ] What-if grade calculator (course page)
-2. [ ] Due-date reminders / notifications
+1. [x] What-if grade calculator (course page, slide-in panel)
+2. [x] Due-date reminders / notifications (header bell: overdue / today / tomorrow / week)
 3. [ ] Assignment detail: attachments/links & richer notes
 4. [ ] Workload view (busy weeks / planning)
 5. [ ] Recurring & bulk edit of assignments
