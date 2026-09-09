@@ -277,6 +277,8 @@ function CalendarPage() {
           {days.map((d, i) => {
             const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             const items = map[key] ?? [];
+            const dayShifts = shiftMap[key] ?? [];
+            const conflict = conflictDays[key];
             const inMonth = d.getMonth() === cursor.getMonth();
             const isToday = d.toDateString() === today.toDateString();
             return (
