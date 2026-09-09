@@ -5,7 +5,7 @@
 3. [x] Reminder preferences — REMOVED at user request
 4. [ ] Assignment detail: attachments/links & richer notes
 5. [x] Workload view (busy weeks / planning)
-6. [ ] Recurring & bulk edit of assignments
+6. [x] Recurring & bulk edit of assignments
 7. [ ] Export / sync (iCal feed)
 8. [ ] Semester GPA from gradebook
 9. [ ] PWA / installable app
