@@ -332,47 +332,59 @@ function CalendarPage() {
                 </div>
                 <div className="space-y-1">
                   {items.slice(0, 3).map((a) => (
-                    <AssignmentDetailDialog
-                      key={a.id}
-                      assignment={a}
-                      course={byCourse[a.course_id]}
-                    >
+                    <div key={a.id} className="flex items-center gap-1">
+                      <AssignmentDetailDialog
+                        assignment={a}
+                        course={byCourse[a.course_id]}
+                      >
+                        <button
+                          type="button"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("text/plain", a.id);
+                            e.dataTransfer.effectAllowed = "move";
+                            setDragId(a.id);
+                          }}
+                          onDragEnd={() => {
+                            setDragId(null);
+                            setDragOverKey(null);
+                          }}
+                          title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}${a.completed ? " · completed" : ""}`}
+                          className={`flex min-w-0 flex-1 cursor-grab items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white active:cursor-grabbing ${
+                            a.completed ? "opacity-50" : ""
+                          } ${dragId === a.id ? "opacity-40" : ""}`}
+                          style={{
+                            backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8",
+                            ...(a.completed
+                              ? {
+                                  backgroundImage:
+                                    "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.22) 4px, rgba(255,255,255,0.22) 8px)",
+                                }
+                              : {}),
+                          }}
+                        >
+                          {a.completed ? (
+                            <Check className="h-3 w-3 shrink-0" />
+                          ) : (
+                            <AssignmentTypeIcon type={a.type} />
+                          )}
+                          <span className={`truncate ${a.completed ? "line-through" : ""}`}>
+                            {a.title}
+                          </span>
+                        </button>
+                      </AssignmentDetailDialog>
                       <button
                         type="button"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/plain", a.id);
-                          e.dataTransfer.effectAllowed = "move";
-                          setDragId(a.id);
-                        }}
-                        onDragEnd={() => {
-                          setDragId(null);
-                          setDragOverKey(null);
-                        }}
-                        title={`${a.title} · ${byCourse[a.course_id]?.name ?? ""}${a.completed ? " · completed" : ""}`}
-                        className={`flex w-full cursor-grab items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] leading-tight text-white active:cursor-grabbing ${
-                          a.completed ? "opacity-50" : ""
-                        } ${dragId === a.id ? "opacity-40" : ""}`}
-                        style={{
-                          backgroundColor: byCourse[a.course_id]?.color ?? "#94a3b8",
-                          ...(a.completed
-                            ? {
-                                backgroundImage:
-                                  "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.22) 4px, rgba(255,255,255,0.22) 8px)",
-                              }
-                            : {}),
-                        }}
+                        onClick={() => toggleComplete(a.id, !a.completed)}
+                        title={a.completed ? "Mark incomplete" : "Mark complete"}
+                        aria-label={a.completed ? "Mark incomplete" : "Mark complete"}
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
                       >
                         {a.completed ? (
-                          <Check className="h-3 w-3 shrink-0" />
-                        ) : (
-                          <AssignmentTypeIcon type={a.type} />
-                        )}
-                        <span className={`truncate ${a.completed ? "line-through" : ""}`}>
-                          {a.title}
-                        </span>
+                          <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+                        ) : null}
                       </button>
-                    </AssignmentDetailDialog>
+                    </div>
                   ))}
                   {items.length > 3 && (
                     <div className="px-1 text-[11px] text-muted-foreground">
