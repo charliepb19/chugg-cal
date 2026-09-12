@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
