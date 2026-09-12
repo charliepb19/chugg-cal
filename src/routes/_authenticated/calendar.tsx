@@ -70,6 +70,16 @@ function CalendarPage() {
     );
   }
 
+  async function toggleComplete(id: string, completed: boolean) {
+    const { error } = await supabase.from("assignments").update({ completed }).eq("id", id);
+    if (error) {
+      toast.error("Couldn't update that assignment. Please try again.");
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+    toast.success(completed ? "Marked complete." : "Marked incomplete.");
+  }
+
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), 1);
