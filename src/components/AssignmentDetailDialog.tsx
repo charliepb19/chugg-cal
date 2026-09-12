@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -96,6 +97,20 @@ export function AssignmentDetailDialog({
     toast.success(next ? "Marked as extra credit." : "No longer extra credit.");
   }
 
+  async function toggleComplete() {
+    const next = !assignment.completed;
+    const { error } = await supabase
+      .from("assignments")
+      .update({ completed: next })
+      .eq("id", assignment.id);
+    if (error) {
+      toast.error("Couldn't update that assignment. Please try again.");
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+    toast.success(next ? "Marked complete." : "Marked incomplete.");
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -105,16 +120,30 @@ export function AssignmentDetailDialog({
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: course?.color ?? "#94a3b8" }}
-            />
-            <span>{course?.name ?? "Course"}</span>
-            <span className="flex items-center gap-1 capitalize">
-              · <AssignmentTypeIcon type={assignment.type} className="h-3.5 w-3.5" />
-              {assignment.type}
-            </span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: course?.color ?? "#94a3b8" }}
+              />
+              <span>{course?.name ?? "Course"}</span>
+              <span className="flex items-center gap-1 capitalize">
+                · <AssignmentTypeIcon type={assignment.type} className="h-3.5 w-3.5" />
+                {assignment.type}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleComplete}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                assignment.completed
+                  ? "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Check className={`h-3.5 w-3.5 ${assignment.completed ? "" : "opacity-40"}`} />
+              {assignment.completed ? "Completed" : "Mark complete"}
+            </button>
           </div>
 
           <div>
