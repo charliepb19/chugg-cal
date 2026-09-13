@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { FileUp, ImageUp, CalendarDays } from "lucide-react";
+import logoAsset from "@/assets/chuggcal-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,7 +29,12 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex h-14 max-w-5xl items-center px-4">
-        <span className="text-sm font-semibold tracking-tight">ChuggCal</span>
+        <span className="flex items-center gap-2">
+          <img src={logoAsset.url} alt="ChuggCal logo" className="h-7 w-7 rounded-md" />
+          <span className="font-display text-lg font-semibold tracking-tight text-primary">
+            ChuggCal
+          </span>
+        </span>
         <Link to="/auth" className="ml-auto">
           <Button variant="ghost" size="sm">
             Sign in

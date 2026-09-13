@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import logoAsset from "@/assets/chuggcal-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -83,8 +84,11 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-sm">
-        <Link to="/" className="mb-8 block text-center text-sm font-semibold tracking-tight">
-          ChuggCal
+        <Link to="/" className="mb-8 flex items-center justify-center gap-2">
+          <img src={logoAsset.url} alt="ChuggCal logo" className="h-9 w-9 rounded-lg" />
+          <span className="font-display text-xl font-semibold tracking-tight text-primary">
+            ChuggCal
+          </span>
         </Link>
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <h1 className="text-lg font-semibold tracking-tight">
