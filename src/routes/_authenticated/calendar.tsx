@@ -316,7 +316,7 @@ function CalendarPage() {
 
 
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card">
+      <div className="relative mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
           {WEEKDAYS.map((d) => (
             <div key={d} className="px-2 py-2 text-center text-xs text-muted-foreground">
