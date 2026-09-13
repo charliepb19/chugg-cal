@@ -70,23 +70,43 @@ function CalendarPage() {
     );
   }
 
+  const [view, setView] = useState<"month" | "week">("month");
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), 1);
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   });
 
   const byCourse = Object.fromEntries(courses.map((c) => [c.id, c]));
 
   const days = useMemo(() => {
-    const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-    const start = new Date(first);
-    start.setDate(1 - first.getDay());
-    return Array.from({ length: 42 }, (_, i) => {
+    const start =
+      view === "month"
+        ? (() => {
+            const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+            const s = new Date(first);
+            s.setDate(1 - first.getDay());
+            return s;
+          })()
+        : (() => {
+            const s = new Date(cursor);
+            s.setDate(cursor.getDate() - cursor.getDay());
+            return s;
+          })();
+    return Array.from({ length: view === "month" ? 42 : 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       return d;
     });
-  }, [cursor]);
+  }, [cursor, view]);
+
+  function shift(dir: 1 | -1) {
+    setCursor((c) => {
+      const d = new Date(c);
+      if (view === "month") d.setMonth(c.getMonth() + dir, 1);
+      else d.setDate(c.getDate() + dir * 7);
+      return d;
+    });
+  }
 
   const filtered = useMemo(
     () =>
