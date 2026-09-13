@@ -61,6 +61,11 @@ function Dashboard() {
 
   return (
     <AppShell>
+      {!isLoading ? (
+        <div className="mb-8">
+          <Onboarding courses={courses} assignments={assignments} />
+        </div>
+      ) : null}
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>
