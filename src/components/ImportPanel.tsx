@@ -121,7 +121,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
               include: true,
             };
             // The same assignment can appear in two overlapping screenshots.
-            if (!found.some((f) => key(f) === key(row))) found.push(row);
+            if (found.some((f) => key(f) === key(row))) continue;
+            found.push(row);
+            // Let each find land in the review list as it is read, rather than
+            // hiding everything behind one long spinner.
+            setRows((prev) => {
+              const list = prev ?? [];
+              return list.some((m) => key(m) === key(row)) ? list : [...list, row];
+            });
+            await new Promise((r) => setTimeout(r, 70));
           }
         } catch (err) {
           failures.push(err instanceof Error ? err.message : `Couldn't read ${original.name}`);
