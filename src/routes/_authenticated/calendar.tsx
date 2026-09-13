@@ -397,7 +397,7 @@ function CalendarPage() {
                       </button>
                     </AssignmentDetailDialog>
                   ))}
-                  {items.length > 3 && (
+                  {view === "month" && items.length > 3 && (
                     <div className="px-1 text-[11px] text-muted-foreground">
                       +{items.length - 3} more
                     </div>
