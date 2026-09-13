@@ -311,7 +311,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
             const update = (patch: Partial<Row>) =>
               setRows((prev) => (prev ?? []).map((r, j) => (j === i ? { ...r, ...patch } : r)));
             return (
-              <div key={i} className="flex flex-wrap items-center gap-2 py-2.5 sm:flex-nowrap sm:gap-3">
+              <div key={i} className="flex flex-wrap items-center gap-2 py-2.5 duration-300 animate-in fade-in slide-in-from-left-2 sm:flex-nowrap sm:gap-3">
                 <Checkbox
                   checked={row.include}
                   onCheckedChange={(v) => update({ include: Boolean(v) })}
@@ -395,7 +395,7 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button onClick={save} disabled={saving || (count === 0 && readyCats.length === 0)}>
+          <Button onClick={save} disabled={saving || busy !== null || (count === 0 && readyCats.length === 0)}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {count === 0
               ? "Save grading breakdown"
