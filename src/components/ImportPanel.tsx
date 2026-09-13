@@ -457,6 +457,39 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           </div>
         )}
 
+        {dropped.length > 0 && (
+          <div className="mt-5 rounded-lg border border-border p-3">
+            <p className="text-sm font-medium">
+              {dropped.length} item{dropped.length === 1 ? "" : "s"} you already have that this
+              document doesn't mention
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Tick any the professor dropped — they'll be deleted when you save.
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {dropped.map((d) => (
+                <li key={d.id} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={dropIds.has(d.id)}
+                    onCheckedChange={(v) =>
+                      setDropIds((prev) => {
+                        const next = new Set(prev);
+                        if (v) next.add(d.id);
+                        else next.delete(d.id);
+                        return next;
+                      })
+                    }
+                  />
+                  <span className="truncate">{d.title}</span>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {fmtDate(d.due_date ? d.due_date.slice(0, 10) : null)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button onClick={save} disabled={saving || busy !== null || (count === 0 && readyCats.length === 0)}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
