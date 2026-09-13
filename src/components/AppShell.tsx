@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import logoAsset from "@/assets/chuggcal-logo.png.asset.json";
 
 const nav = [
   { to: "/dashboard", label: "Upcoming", icon: LayoutList },
@@ -38,8 +39,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
-          <Link to="/dashboard" className="text-sm font-semibold tracking-tight">
-            ChuggCal
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <img
+              src={logoAsset.url}
+              alt="ChuggCal logo"
+              className="h-7 w-7 rounded-md"
+            />
+            <span className="font-display text-lg font-semibold tracking-tight text-primary">
+              ChuggCal
+            </span>
           </Link>
           <nav className="flex items-center gap-1">
             {nav.map(({ to, label, icon: Icon }) => (
