@@ -1,26 +1,25 @@
-# chuggCal
+#ChuggCal
 
-I'm building this app in stages and will be sending you a series of prompts over time, each adding a new feature or refining an existing one. Please treat this as an evolving project — don't try to anticipate future features I haven't described yet, and don't remove or restructure existing functionality unless I specifically ask you to. Confirm you understand before I start.
+ChuggCal is a school assignment calendar app that eliminates manual entry. Instead of typing in every due date by hand, you upload a syllabus PDF or a screenshot of your assignment list from your school's LMS (e.g. D2L), and ChuggCal automatically reads it and adds everything to your calendar.
 
-This project was built with [Lovable](https://lovable.dev).
+Why ChuggCal?
 
-**Live app**: https://chuggcal.lovable.app
+Keeping track of due dates across multiple classes usually means manually copying dates from a syllabus or LMS into a planner or calendar app — tedious and easy to mess up. ChuggCal removes that step: upload what you already have, and let the app do the parsing.
 
-## Build with Lovable
+How It Works
+Upload — Add a syllabus PDF or a screenshot/image of your assignment list from your LMS.
+Parse — ChuggCal reads the content and extracts assignment names and due dates.
+Import — Assignments are automatically added to your calendar view, no manual data entry required.
+Tech Stack
+Built with Lovable
+Status
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/8055412a-6bc8-47c6-8793-598d10bb5dfa).
+🚧 Early development — core import flow (syllabus PDF / LMS screenshot → calendar) is the current focus.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+Getting Started
 
-## Development
+Setup instructions coming soon.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Contributing
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+This is currently a personal/student project. Feel free to open an issue if you have suggestions.
