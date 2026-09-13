@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { extractAssignments, type ExtractedAssignment } from "@/lib/import.functions";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
 import { categoryWarnings, computeWeights, mergeCategories, resolveCategories } from "@/lib/grade";
+import { assignmentsQuery } from "@/lib/db";
+import { diffAgainstExisting, diffSummary } from "@/lib/syllabus-diff";
 
 
 type Row = ExtractedAssignment & { include: boolean; category?: string };
@@ -71,6 +73,9 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   const [catsDetected, setCatsDetected] = useState(false);
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
+  const [dropIds, setDropIds] = useState<Set<string>>(new Set());
+  const { data: allAssignments = [] } = useQuery(assignmentsQuery);
+  const existing = allAssignments.filter((a) => a.course_id === courseId);
 
   const key = (r: { title: string; dueDate: string | null }) =>
     `${r.title.trim().toLowerCase()}|${r.dueDate ?? ""}`;
