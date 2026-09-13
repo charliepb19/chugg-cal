@@ -299,6 +299,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         <p className="mt-1 text-sm text-muted-foreground">
           Nothing is saved until you confirm. Edit anything that looks off.
         </p>
+        {busy && (
+          <p className="mt-3 flex items-center gap-2 text-sm text-primary">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Reading{progress ? ` ${progress.done + 1} of ${progress.total}` : ""}… {rows.length} found
+            so far
+          </p>
+        )}
         <div className="mt-4 divide-y divide-border">
           {rows.map((row, i) => {
             const update = (patch: Partial<Row>) =>
