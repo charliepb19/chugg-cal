@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { extractAssignments, type ExtractedAssignment } from "@/lib/import.functions";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { ManualAssignmentDialog } from "@/components/ManualAssignmentDialog";
 import { parseDueDateFromText } from "@/lib/parse-date";
 import { CategoryWeights, type CategoryRow } from "@/components/CategoryWeights";
 import { categoryWarnings, computeWeights, mergeCategories, resolveCategories } from "@/lib/grade";
+import { assignmentsQuery } from "@/lib/db";
+import { diffAgainstExisting, diffSummary } from "@/lib/syllabus-diff";
 
 
 type Row = ExtractedAssignment & { include: boolean; category?: string };
@@ -71,6 +73,9 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   const [catsDetected, setCatsDetected] = useState(false);
   const [importKind, setImportKind] = useState<"pdf" | "image">("pdf");
   const [saving, setSaving] = useState(false);
+  const [dropIds, setDropIds] = useState<Set<string>>(new Set());
+  const { data: allAssignments = [] } = useQuery(assignmentsQuery);
+  const existing = allAssignments.filter((a) => a.course_id === courseId);
 
   const key = (r: { title: string; dueDate: string | null }) =>
     `${r.title.trim().toLowerCase()}|${r.dueDate ?? ""}`;
@@ -121,7 +126,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
               include: true,
             };
             // The same assignment can appear in two overlapping screenshots.
-            if (!found.some((f) => key(f) === key(row))) found.push(row);
+            if (found.some((f) => key(f) === key(row))) continue;
+            found.push(row);
+            // Let each find land in the review list as it is read, rather than
+            // hiding everything behind one long spinner.
+            setRows((prev) => {
+              const list = prev ?? [];
+              return list.some((m) => key(m) === key(row)) ? list : [...list, row];
+            });
+            await new Promise((r) => setTimeout(r, 70));
           }
         } catch (err) {
           failures.push(err instanceof Error ? err.message : `Couldn't read ${original.name}`);
@@ -180,20 +193,27 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   async function save() {
     const all = rows ?? [];
     const keep = cleanCats(cats);
-    const picked = resolveCategories(
+    const resolvedAll = resolveCategories(
       all.map((r) => ({ ...r, category: r.category ?? "" })),
       keep,
-    ).filter((r) => r.include);
-    if (!picked.length && !keep.length) return;
+    );
+    const { results } = diffAgainstExisting(all, existing);
+    const picked = resolvedAll
+      .map((r, i) => ({ row: r, diff: results[i]! }))
+      .filter((p) => p.row.include);
+    if (!picked.length && !keep.length && !dropIds.size) return;
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("You are signed out");
 
-      if (picked.length) {
+      const fresh = picked.filter((p) => p.diff.status === "new");
+      const moved = picked.filter((p) => p.diff.status === "moved");
+
+      if (fresh.length) {
         const { error } = await supabase.from("assignments").insert(
-          picked.map((r) => ({
+          fresh.map(({ row: r }) => ({
             user_id: userId,
             course_id: courseId,
             title: r.title,
@@ -208,6 +228,21 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           })),
         );
         if (error) throw error;
+      }
+
+      // A re-uploaded syllabus updates the dates it changed instead of
+      // stacking a second copy of every assignment on the course.
+      for (const { row, diff } of moved) {
+        await supabase
+          .from("assignments")
+          .update({
+            due_date: row.dueDate ? new Date(`${row.dueDate}T23:59:00`).toISOString() : null,
+          })
+          .eq("id", diff.matchId!);
+      }
+
+      if (dropIds.size) {
+        await supabase.from("assignments").delete().in("id", [...dropIds]);
       }
 
       if (keep.length) {
@@ -257,10 +292,17 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setRows(null);
       setCats([]);
+      setDropIds(new Set());
+      const bits = [
+        fresh.length ? `added ${fresh.length}` : "",
+        moved.length ? `updated ${moved.length} date${moved.length === 1 ? "" : "s"}` : "",
+        dropIds.size ? `removed ${dropIds.size}` : "",
+        keep.length ? `saved ${keep.length} grading categories` : "",
+      ].filter(Boolean);
       toast.success(
-        keep.length
-          ? `Added ${picked.length} assignment${picked.length === 1 ? "" : "s"} and ${keep.length} grading categories${backfilled ? `, sorting ${backfilled} existing item${backfilled === 1 ? "" : "s"} into them` : ""}.`
-          : `Added ${picked.length} assignments.`,
+        `${bits.length ? bits.join(", ") : "Nothing to change"}${
+          backfilled ? `, sorting ${backfilled} existing item${backfilled === 1 ? "" : "s"} into them` : ""
+        }.`.replace(/^./, (c) => c.toUpperCase()),
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save");
@@ -280,6 +322,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       resolved.map((r) => ({ ...r, weight: "" })),
       readyCats,
     );
+    const { results: diffs, dropped } = diffAgainstExisting(rows, existing);
+    const isUpdate = existing.length > 0;
+    const fmtDate = (v: string | null) =>
+      v
+        ? new Date(`${v}T12:00:00`).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })
+        : "no date";
     return (
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
@@ -291,12 +342,26 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         <p className="mt-1 text-sm text-muted-foreground">
           Nothing is saved until you confirm. Edit anything that looks off.
         </p>
+        {isUpdate && !busy && (
+          <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm">
+            <span className="font-medium">Compared with what you already have: </span>
+            {diffSummary(diffs, dropped.length)} Items already on the course keep their grades and
+            notes.
+          </p>
+        )}
+        {busy && (
+          <p className="mt-3 flex items-center gap-2 text-sm text-primary">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Reading{progress ? ` ${progress.done + 1} of ${progress.total}` : ""}… {rows.length} found
+            so far
+          </p>
+        )}
         <div className="mt-4 divide-y divide-border">
           {rows.map((row, i) => {
             const update = (patch: Partial<Row>) =>
               setRows((prev) => (prev ?? []).map((r, j) => (j === i ? { ...r, ...patch } : r)));
             return (
-              <div key={i} className="flex flex-wrap items-center gap-2 py-2.5 sm:flex-nowrap sm:gap-3">
+              <div key={i} className="flex flex-wrap items-center gap-2 py-2.5 duration-300 animate-in fade-in slide-in-from-left-2 sm:flex-nowrap sm:gap-3">
                 <Checkbox
                   checked={row.include}
                   onCheckedChange={(v) => update({ include: Boolean(v) })}
@@ -344,6 +409,19 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                   onChange={(e) => update({ dueDate: e.target.value || null })}
                   className="h-9 w-40"
                 />
+                {isUpdate && diffs[i]?.status === "new" && (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">new</span>
+                )}
+                {diffs[i]?.status === "moved" && (
+                  <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-400">
+                    moved from {fmtDate(diffs[i]!.previousDate)}
+                  </span>
+                )}
+                {diffs[i]?.status === "unchanged" && (
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                    unchanged
+                  </span>
+                )}
                 {row.recurring && (
                   <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                     repeating
@@ -379,8 +457,41 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           </div>
         )}
 
+        {dropped.length > 0 && (
+          <div className="mt-5 rounded-lg border border-border p-3">
+            <p className="text-sm font-medium">
+              {dropped.length} item{dropped.length === 1 ? "" : "s"} you already have that this
+              document doesn't mention
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Tick any the professor dropped — they'll be deleted when you save.
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {dropped.map((d) => (
+                <li key={d.id} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={dropIds.has(d.id)}
+                    onCheckedChange={(v) =>
+                      setDropIds((prev) => {
+                        const next = new Set(prev);
+                        if (v) next.add(d.id);
+                        else next.delete(d.id);
+                        return next;
+                      })
+                    }
+                  />
+                  <span className="truncate">{d.title}</span>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {fmtDate(d.due_date ? d.due_date.slice(0, 10) : null)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button onClick={save} disabled={saving || (count === 0 && readyCats.length === 0)}>
+          <Button onClick={save} disabled={saving || busy !== null || (count === 0 && readyCats.length === 0)}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {count === 0
               ? "Save grading breakdown"

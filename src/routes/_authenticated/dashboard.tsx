@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { AssignmentTypeIcon } from "@/lib/assignment-type";
+import { Onboarding } from "@/components/Onboarding";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -60,6 +61,11 @@ function Dashboard() {
 
   return (
     <AppShell>
+      {!isLoading ? (
+        <div className="mb-8">
+          <Onboarding courses={courses} assignments={assignments} />
+        </div>
+      ) : null}
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>

@@ -1,12 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useRef, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AgendaView } from "@/components/AgendaView";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery, workShiftsQuery, shiftRangeLabel } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronLeft, ChevronRight, EyeOff, Briefcase, AlertTriangle } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  Briefcase,
+  AlertTriangle,
+  Upload,
+} from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { AssignmentTypeIcon } from "@/lib/assignment-type";
 
@@ -37,6 +47,8 @@ function CalendarPage() {
   const { data: assignments = [] } = useQuery(assignmentsQuery);
   const { data: shifts = [] } = useQuery(workShiftsQuery);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const touchX = useRef<number | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
@@ -174,6 +186,24 @@ function CalendarPage() {
 
   const today = new Date();
 
+  // Nothing imported yet: ghost a plausible semester behind an invitation.
+  const isEmpty = assignments.length === 0;
+  const ghost: Record<number, { label: string; color: string }[]> = {
+    3: [{ label: "Reading: Ch. 1–2", color: "#2563eb" }],
+    8: [{ label: "Problem Set 1", color: "#059669" }],
+    10: [{ label: "Quiz 1", color: "#d97706" }],
+    15: [
+      { label: "Essay draft", color: "#7c3aed" },
+      { label: "Lab report", color: "#0891b2" },
+    ],
+    17: [{ label: "Midterm Exam", color: "#dc2626" }],
+    22: [{ label: "Problem Set 2", color: "#059669" }],
+    24: [{ label: "Reading: Ch. 5", color: "#2563eb" }],
+    29: [{ label: "Quiz 2", color: "#d97706" }],
+    31: [{ label: "Group presentation", color: "#db2777" }],
+    36: [{ label: "Final paper", color: "#7c3aed" }],
+  };
+
   return (
     <AppShell>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -298,7 +328,30 @@ function CalendarPage() {
 
 
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card">
+      <div
+        onTouchStart={(e) => {
+          touchX.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          const start = touchX.current;
+          touchX.current = null;
+          const end = e.changedTouches[0]?.clientX;
+          if (start === null || end === undefined) return;
+          const dx = end - start;
+          if (Math.abs(dx) > 60) shift(dx < 0 ? 1 : -1);
+        }}
+      >
+      {isMobile ? (
+        <AgendaView
+          days={days}
+          map={map}
+          shiftMap={shiftMap}
+          conflictDays={conflictDays}
+          byCourse={byCourse}
+          isEmpty={isEmpty}
+        />
+      ) : (
+      <div className="relative mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
           {WEEKDAYS.map((d) => (
             <div key={d} className="px-2 py-2 text-center text-xs text-muted-foreground">
@@ -354,6 +407,18 @@ function CalendarPage() {
                   )}
                 </div>
                 <div className="space-y-1">
+                  {isEmpty && inMonth
+                    ? (ghost[i] ?? []).map((g) => (
+                        <div
+                          key={g.label}
+                          aria-hidden
+                          className="truncate rounded px-1.5 py-0.5 text-[11px] leading-tight text-white opacity-25 blur-[0.4px] select-none"
+                          style={{ backgroundColor: g.color }}
+                        >
+                          {g.label}
+                        </div>
+                      ))
+                    : null}
                   {(view === "week" ? items : items.slice(0, 3)).map((a) => (
                     <AssignmentDetailDialog
                       key={a.id}
@@ -425,6 +490,28 @@ function CalendarPage() {
             );
           })}
         </div>
+
+        {isEmpty ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-card/60 via-card/85 to-card p-6">
+            <div className="max-w-sm text-center">
+              <p className="font-display text-2xl font-semibold tracking-tight">
+                This could be your semester
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Drop in a syllabus PDF or a screenshot of your LMS and every due date,
+                quiz and exam lands here — colour-coded by course.
+              </p>
+              <Link to="/courses">
+                <Button className="mt-5">
+                  <Upload className="h-4 w-4" />
+                  Import my first syllabus
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </div>
+      )}
       </div>
     </AppShell>
   );
