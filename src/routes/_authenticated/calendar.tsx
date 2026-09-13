@@ -328,6 +328,29 @@ function CalendarPage() {
 
 
 
+      <div
+        onTouchStart={(e) => {
+          touchX.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          const start = touchX.current;
+          touchX.current = null;
+          const end = e.changedTouches[0]?.clientX;
+          if (start === null || end === undefined) return;
+          const dx = end - start;
+          if (Math.abs(dx) > 60) shift(dx < 0 ? 1 : -1);
+        }}
+      >
+      {isMobile ? (
+        <AgendaView
+          days={days}
+          map={map}
+          shiftMap={shiftMap}
+          conflictDays={conflictDays}
+          byCourse={byCourse}
+          isEmpty={isEmpty}
+        />
+      ) : (
       <div className="relative mt-5 overflow-hidden rounded-xl border border-border bg-card">
         <div className="grid grid-cols-7 border-b border-border">
           {WEEKDAYS.map((d) => (
