@@ -70,23 +70,43 @@ function CalendarPage() {
     );
   }
 
+  const [view, setView] = useState<"month" | "week">("month");
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), 1);
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   });
 
   const byCourse = Object.fromEntries(courses.map((c) => [c.id, c]));
 
   const days = useMemo(() => {
-    const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-    const start = new Date(first);
-    start.setDate(1 - first.getDay());
-    return Array.from({ length: 42 }, (_, i) => {
+    const start =
+      view === "month"
+        ? (() => {
+            const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+            const s = new Date(first);
+            s.setDate(1 - first.getDay());
+            return s;
+          })()
+        : (() => {
+            const s = new Date(cursor);
+            s.setDate(cursor.getDate() - cursor.getDay());
+            return s;
+          })();
+    return Array.from({ length: view === "month" ? 42 : 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       return d;
     });
-  }, [cursor]);
+  }, [cursor, view]);
+
+  function shift(dir: 1 | -1) {
+    setCursor((c) => {
+      const d = new Date(c);
+      if (view === "month") d.setMonth(c.getMonth() + dir, 1);
+      else d.setDate(c.getDate() + dir * 7);
+      return d;
+    });
+  }
 
   const filtered = useMemo(
     () =>
@@ -156,30 +176,43 @@ function CalendarPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
-          {cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+          {view === "month"
+            ? cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+            : `${days[0]?.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${days[6]?.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`}
         </h1>
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          >
+          <div className="mr-1 flex rounded-full border border-border p-0.5">
+            {(["month", "week"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={`rounded-full px-3 py-1 text-xs capitalize transition-colors ${
+                  view === v
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="icon" onClick={() => shift(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}
+            onClick={() =>
+              setCursor(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
+            }
           >
             Today
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          >
+          <Button variant="outline" size="icon" onClick={() => shift(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -279,7 +312,7 @@ function CalendarPage() {
             const items = map[key] ?? [];
             const dayShifts = shiftMap[key] ?? [];
             const conflict = conflictDays[key];
-            const inMonth = d.getMonth() === cursor.getMonth();
+            const inMonth = view === "week" || d.getMonth() === cursor.getMonth();
             const isToday = d.toDateString() === today.toDateString();
             return (
               <div
@@ -298,7 +331,7 @@ function CalendarPage() {
                   setDragId(null);
                   if (id) void moveAssignment(id, d);
                 }}
-                className={`min-h-24 border-b border-r border-border p-1.5 transition-colors last:border-r-0 ${
+                className={`${view === "week" ? "min-h-64" : "min-h-24"} border-b border-r border-border p-1.5 transition-colors last:border-r-0 ${
                   inMonth ? "" : "bg-muted/30"
                 } ${dragOverKey === key ? "bg-primary/10 ring-1 ring-inset ring-primary" : ""}`}
               >
@@ -321,7 +354,7 @@ function CalendarPage() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  {items.slice(0, 3).map((a) => (
+                  {(view === "week" ? items : items.slice(0, 3)).map((a) => (
                     <AssignmentDetailDialog
                       key={a.id}
                       assignment={a}
@@ -364,7 +397,7 @@ function CalendarPage() {
                       </button>
                     </AssignmentDetailDialog>
                   ))}
-                  {items.length > 3 && (
+                  {view === "month" && items.length > 3 && (
                     <div className="px-1 text-[11px] text-muted-foreground">
                       +{items.length - 3} more
                     </div>
