@@ -176,30 +176,43 @@ function CalendarPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
-          {cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+          {view === "month"
+            ? cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+            : `${days[0]?.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${days[6]?.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`}
         </h1>
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          >
+          <div className="mr-1 flex rounded-full border border-border p-0.5">
+            {(["month", "week"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={`rounded-full px-3 py-1 text-xs capitalize transition-colors ${
+                  view === v
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="icon" onClick={() => shift(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}
+            onClick={() =>
+              setCursor(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
+            }
           >
             Today
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          >
+          <Button variant="outline" size="icon" onClick={() => shift(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
