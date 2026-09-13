@@ -188,20 +188,27 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
   async function save() {
     const all = rows ?? [];
     const keep = cleanCats(cats);
-    const picked = resolveCategories(
+    const resolvedAll = resolveCategories(
       all.map((r) => ({ ...r, category: r.category ?? "" })),
       keep,
-    ).filter((r) => r.include);
-    if (!picked.length && !keep.length) return;
+    );
+    const { results } = diffAgainstExisting(all, existing);
+    const picked = resolvedAll
+      .map((r, i) => ({ row: r, diff: results[i]! }))
+      .filter((p) => p.row.include);
+    if (!picked.length && !keep.length && !dropIds.size) return;
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("You are signed out");
 
-      if (picked.length) {
+      const fresh = picked.filter((p) => p.diff.status === "new");
+      const moved = picked.filter((p) => p.diff.status === "moved");
+
+      if (fresh.length) {
         const { error } = await supabase.from("assignments").insert(
-          picked.map((r) => ({
+          fresh.map(({ row: r }) => ({
             user_id: userId,
             course_id: courseId,
             title: r.title,
@@ -216,6 +223,21 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
           })),
         );
         if (error) throw error;
+      }
+
+      // A re-uploaded syllabus updates the dates it changed instead of
+      // stacking a second copy of every assignment on the course.
+      for (const { row, diff } of moved) {
+        await supabase
+          .from("assignments")
+          .update({
+            due_date: row.dueDate ? new Date(`${row.dueDate}T23:59:00`).toISOString() : null,
+          })
+          .eq("id", diff.matchId!);
+      }
+
+      if (dropIds.size) {
+        await supabase.from("assignments").delete().in("id", [...dropIds]);
       }
 
       if (keep.length) {
