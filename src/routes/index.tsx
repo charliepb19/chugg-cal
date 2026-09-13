@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { FileUp, ImageUp, CalendarDays } from "lucide-react";
+import logoAsset from "@/assets/chuggcal-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
