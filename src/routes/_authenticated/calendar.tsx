@@ -312,7 +312,7 @@ function CalendarPage() {
             const items = map[key] ?? [];
             const dayShifts = shiftMap[key] ?? [];
             const conflict = conflictDays[key];
-            const inMonth = d.getMonth() === cursor.getMonth();
+            const inMonth = view === "week" || d.getMonth() === cursor.getMonth();
             const isToday = d.toDateString() === today.toDateString();
             return (
               <div
