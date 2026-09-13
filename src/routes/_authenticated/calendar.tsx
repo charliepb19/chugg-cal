@@ -174,6 +174,24 @@ function CalendarPage() {
 
   const today = new Date();
 
+  // Nothing imported yet: ghost a plausible semester behind an invitation.
+  const isEmpty = assignments.length === 0;
+  const ghost: Record<number, { label: string; color: string }[]> = {
+    3: [{ label: "Reading: Ch. 1–2", color: "#2563eb" }],
+    8: [{ label: "Problem Set 1", color: "#059669" }],
+    10: [{ label: "Quiz 1", color: "#d97706" }],
+    15: [
+      { label: "Essay draft", color: "#7c3aed" },
+      { label: "Lab report", color: "#0891b2" },
+    ],
+    17: [{ label: "Midterm Exam", color: "#dc2626" }],
+    22: [{ label: "Problem Set 2", color: "#059669" }],
+    24: [{ label: "Reading: Ch. 5", color: "#2563eb" }],
+    29: [{ label: "Quiz 2", color: "#d97706" }],
+    31: [{ label: "Group presentation", color: "#db2777" }],
+    36: [{ label: "Final paper", color: "#7c3aed" }],
+  };
+
   return (
     <AppShell>
       <div className="flex flex-wrap items-center justify-between gap-2">
