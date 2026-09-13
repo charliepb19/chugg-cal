@@ -409,6 +409,19 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
                   onChange={(e) => update({ dueDate: e.target.value || null })}
                   className="h-9 w-40"
                 />
+                {isUpdate && diffs[i]?.status === "new" && (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">new</span>
+                )}
+                {diffs[i]?.status === "moved" && (
+                  <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-400">
+                    moved from {fmtDate(diffs[i]!.previousDate)}
+                  </span>
+                )}
+                {diffs[i]?.status === "unchanged" && (
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                    unchanged
+                  </span>
+                )}
                 {row.recurring && (
                   <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                     repeating
