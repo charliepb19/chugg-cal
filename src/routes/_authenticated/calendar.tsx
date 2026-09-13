@@ -455,6 +455,26 @@ function CalendarPage() {
             );
           })}
         </div>
+
+        {isEmpty ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-card/60 via-card/85 to-card p-6">
+            <div className="max-w-sm text-center">
+              <p className="font-display text-2xl font-semibold tracking-tight">
+                This could be your semester
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Drop in a syllabus PDF or a screenshot of your LMS and every due date,
+                quiz and exam lands here — colour-coded by course.
+              </p>
+              <Link to="/courses">
+                <Button className="mt-5">
+                  <Upload className="h-4 w-4" />
+                  Import my first syllabus
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : null}
       </div>
     </AppShell>
   );
