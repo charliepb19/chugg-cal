@@ -6,7 +6,15 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { coursesQuery, assignmentsQuery, workShiftsQuery, shiftRangeLabel } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronLeft, ChevronRight, EyeOff, Briefcase, AlertTriangle } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  Briefcase,
+  AlertTriangle,
+  Upload,
+} from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { AssignmentTypeIcon } from "@/lib/assignment-type";
 
