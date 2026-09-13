@@ -47,6 +47,8 @@ function CalendarPage() {
   const { data: assignments = [] } = useQuery(assignmentsQuery);
   const { data: shifts = [] } = useQuery(workShiftsQuery);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const touchX = useRef<number | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
