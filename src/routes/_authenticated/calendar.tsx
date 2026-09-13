@@ -511,6 +511,8 @@ function CalendarPage() {
           </div>
         ) : null}
       </div>
+      )}
+      </div>
     </AppShell>
   );
 }
