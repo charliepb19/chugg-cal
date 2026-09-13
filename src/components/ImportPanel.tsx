@@ -322,6 +322,15 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       resolved.map((r) => ({ ...r, weight: "" })),
       readyCats,
     );
+    const { results: diffs, dropped } = diffAgainstExisting(rows, existing);
+    const isUpdate = existing.length > 0;
+    const fmtDate = (v: string | null) =>
+      v
+        ? new Date(`${v}T12:00:00`).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })
+        : "no date";
     return (
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
