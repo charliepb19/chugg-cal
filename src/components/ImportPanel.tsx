@@ -287,10 +287,17 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
       await queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setRows(null);
       setCats([]);
+      setDropIds(new Set());
+      const bits = [
+        fresh.length ? `added ${fresh.length}` : "",
+        moved.length ? `updated ${moved.length} date${moved.length === 1 ? "" : "s"}` : "",
+        dropIds.size ? `removed ${dropIds.size}` : "",
+        keep.length ? `saved ${keep.length} grading categories` : "",
+      ].filter(Boolean);
       toast.success(
-        keep.length
-          ? `Added ${picked.length} assignment${picked.length === 1 ? "" : "s"} and ${keep.length} grading categories${backfilled ? `, sorting ${backfilled} existing item${backfilled === 1 ? "" : "s"} into them` : ""}.`
-          : `Added ${picked.length} assignments.`,
+        `${bits.length ? bits.join(", ") : "Nothing to change"}${
+          backfilled ? `, sorting ${backfilled} existing item${backfilled === 1 ? "" : "s"} into them` : ""
+        }.`.replace(/^./, (c) => c.toUpperCase()),
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save");
