@@ -372,6 +372,18 @@ function CalendarPage() {
                   )}
                 </div>
                 <div className="space-y-1">
+                  {isEmpty && inMonth
+                    ? (ghost[i] ?? []).map((g) => (
+                        <div
+                          key={g.label}
+                          aria-hidden
+                          className="truncate rounded px-1.5 py-0.5 text-[11px] leading-tight text-white opacity-25 blur-[0.4px] select-none"
+                          style={{ backgroundColor: g.color }}
+                        >
+                          {g.label}
+                        </div>
+                      ))
+                    : null}
                   {(view === "week" ? items : items.slice(0, 3)).map((a) => (
                     <AssignmentDetailDialog
                       key={a.id}
