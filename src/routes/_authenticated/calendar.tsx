@@ -354,7 +354,7 @@ function CalendarPage() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  {items.slice(0, 3).map((a) => (
+                  {(view === "week" ? items : items.slice(0, 3)).map((a) => (
                     <AssignmentDetailDialog
                       key={a.id}
                       assignment={a}
