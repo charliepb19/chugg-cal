@@ -342,6 +342,13 @@ export function ImportPanel({ courseId, semester = "" }: { courseId: string; sem
         <p className="mt-1 text-sm text-muted-foreground">
           Nothing is saved until you confirm. Edit anything that looks off.
         </p>
+        {isUpdate && !busy && (
+          <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm">
+            <span className="font-medium">Compared with what you already have: </span>
+            {diffSummary(diffs, dropped.length)} Items already on the course keep their grades and
+            notes.
+          </p>
+        )}
         {busy && (
           <p className="mt-3 flex items-center gap-2 text-sm text-primary">
             <Loader2 className="h-4 w-4 animate-spin" />
