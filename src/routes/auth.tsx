@@ -71,15 +71,21 @@ function AuthPage() {
 
   async function google() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth/callback`,
+      redirect_uri: window.location.origin,
     });
     if (result.error) {
       toast.error("Google sign-in failed. Try again.");
       return;
     }
     if (result.redirected) return;
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      toast.error("Sign-in didn't complete. Please try again.");
+      return;
+    }
     navigate({ to: "/dashboard", replace: true });
   }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
