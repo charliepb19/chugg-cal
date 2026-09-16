@@ -14,6 +14,8 @@ import { themeInitScript } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { consumeOAuthReturn } from "@/lib/oauth-callback";
+import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
   return (
