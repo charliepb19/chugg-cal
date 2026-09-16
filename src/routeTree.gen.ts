@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGradebookRouteImport } from './routes/_authenticated/gradebook'
 import { Route as AuthenticatedWorkRouteImport } from './routes/_authenticated/work'
 import { Route as AuthenticatedWorkloadRouteImport } from './routes/_authenticated/workload'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AuthenticatedCoursesIndexRouteImport } from './routes/_authenticated/courses.index'
 import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_authenticated/courses.$courseId'
 
@@ -59,6 +60,11 @@ const AuthenticatedWorkloadRoute = AuthenticatedWorkloadRouteImport.update({
   path: '/workload',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedCoursesIndexRoute =
   AuthenticatedCoursesIndexRouteImport.update({
     id: '/courses/',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/gradebook': typeof AuthenticatedGradebookRoute
   '/work': typeof AuthenticatedWorkRoute
   '/workload': typeof AuthenticatedWorkloadRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/courses/': typeof AuthenticatedCoursesIndexRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/gradebook': typeof AuthenticatedGradebookRoute
   '/work': typeof AuthenticatedWorkRoute
   '/workload': typeof AuthenticatedWorkloadRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/courses': typeof AuthenticatedCoursesIndexRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/gradebook': typeof AuthenticatedGradebookRoute
   '/_authenticated/work': typeof AuthenticatedWorkRoute
   '/_authenticated/workload': typeof AuthenticatedWorkloadRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/_authenticated/courses/': typeof AuthenticatedCoursesIndexRoute
 }
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/gradebook'
     | '/work'
     | '/workload'
+    | '/auth/callback'
     | '/courses/$courseId'
     | '/courses/'
   fileRoutesByTo: FileRoutesByTo
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/gradebook'
     | '/work'
     | '/workload'
+    | '/auth/callback'
     | '/courses/$courseId'
     | '/courses'
   id:
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/gradebook'
     | '/_authenticated/work'
     | '/_authenticated/workload'
+    | '/auth_/callback'
     | '/_authenticated/courses/$courseId'
     | '/_authenticated/courses/'
   fileRoutesById: FileRoutesById
@@ -148,6 +160,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkloadRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/courses/': {
       id: '/_authenticated/courses/'
       path: '/courses'
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
