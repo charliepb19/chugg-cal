@@ -133,6 +133,18 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // A full-page sign-in redirect can land on any page with tokens in the URL;
+  // complete the session instead of leaving the visitor signed out.
+  useEffect(() => {
+    if (window.location.pathname === "/auth/callback") return;
+    const result = consumeOAuthReturn();
+    if (!result?.tokens) return;
+    void (async () => {
+      const { error } = await supabase.auth.setSession(result.tokens);
+      if (!error) window.location.replace("/dashboard");
+    })();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
