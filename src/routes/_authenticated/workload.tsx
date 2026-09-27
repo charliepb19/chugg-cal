@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { coursesQuery, assignmentsQuery } from "@/lib/db";
+import { coursesQuery, assignmentsQuery, gradeCategoriesQuery } from "@/lib/db";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
+import { computeWeights, resolveCategories, summarizeGrade } from "@/lib/grade";
+import { AlertTriangle } from "lucide-react";
+
+const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export const Route = createFileRoute("/_authenticated/workload")({
   head: () => ({
