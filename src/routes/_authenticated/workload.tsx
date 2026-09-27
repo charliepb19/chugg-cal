@@ -47,7 +47,38 @@ function weekLabel(key: string) {
   return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
 }
 
+type Stake = { courseId: string; weight: number; current: number | null };
+
+function useStakes() {
+  const { data: courses = [] } = useQuery(coursesQuery);
+  const { data: assignments = [] } = useQuery(assignmentsQuery);
+  const { data: categories = [] } = useQuery(gradeCategoriesQuery);
+  const weightById = new Map<string, number>();
+  const currentByCourse = new Map<string, number | null>();
+  for (const course of courses) {
+    const cats = categories
+      .filter((c) => c.course_id === course.id)
+      .map((c) => ({ name: c.name, percent: c.weight, perItem: c.per_item }));
+    const items = resolveCategories(
+      assignments.filter((a) => a.course_id === course.id),
+      cats,
+    );
+    const w = computeWeights(items, cats);
+    items.forEach((it, i) => {
+      if (w[i] && !it.extra_credit) weightById.set(it.id, w[i]!);
+    });
+    currentByCourse.set(course.id, summarizeGrade(items, cats).current);
+  }
+  return { weightById, currentByCourse };
+}
+
+/** High stakes: a course has ≥15% of its grade due, or ≥10% while you're below 80%. */
+function isHighStakes(s: Stake) {
+  return s.weight >= 15 || (s.weight >= 10 && s.current !== null && s.current < 80);
+}
+
 function Workload() {
+  const { weightById, currentByCourse } = useStakes();
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [], isLoading } = useQuery(assignmentsQuery);
 
