@@ -125,10 +125,23 @@ function Workload() {
             const ratio = maxCount > 0 ? count / maxCount : 0;
             const isCurrent = key === thisWeek;
             const isPast = key < thisWeek;
+            const stakeMap = new Map<string, number>();
+            for (const a of list) {
+              const w = weightById.get(a.id);
+              if (w) stakeMap.set(a.course_id, (stakeMap.get(a.course_id) ?? 0) + w);
+            }
+            const stakes: Stake[] = [...stakeMap.entries()]
+              .map(([courseId, weight]) => ({
+                courseId,
+                weight: r1(weight),
+                current: currentByCourse.get(courseId) ?? null,
+              }))
+              .sort((a, b) => b.weight - a.weight);
+            const high = stakes.some(isHighStakes);
             return (
               <section
                 key={key}
-                className="rounded-xl border border-border bg-card p-4"
+                className={`rounded-xl border bg-card p-4 ${high ? "border-destructive/60 ring-1 ring-destructive/30" : "border-border"}`}
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-sm font-semibold">
@@ -141,6 +154,11 @@ function Workload() {
                     {isPast && (
                       <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
                         overdue
+                      </span>
+                    )}
+                    {high && (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-medium text-destructive-foreground">
+                        <AlertTriangle className="h-3 w-3" /> high stakes
                       </span>
                     )}
                   </h2>
@@ -160,6 +178,28 @@ function Workload() {
                     style={{ width: `${Math.max(8, ratio * 100)}%` }}
                   />
                 </div>
+                {stakes.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {stakes.map((s) => {
+                      const course = byCourse[s.courseId];
+                      const hot = isHighStakes(s);
+                      return (
+                        <span
+                          key={s.courseId}
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${hot ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-border bg-muted/50 text-muted-foreground"}`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: course?.color ?? "#94a3b8" }}
+                          />
+                          <span className="font-medium text-foreground">{course?.name ?? "Course"}</span>
+                          {s.weight}% of grade
+                          {s.current !== null && <> · you're at {r1(s.current)}%</>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
                 <ul className="mt-3 space-y-1.5">
                   {list
                     .slice()
