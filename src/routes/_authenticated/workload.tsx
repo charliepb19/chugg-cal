@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { coursesQuery, assignmentsQuery } from "@/lib/db";
+import { coursesQuery, assignmentsQuery, gradeCategoriesQuery } from "@/lib/db";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
+import { computeWeights, resolveCategories, summarizeGrade } from "@/lib/grade";
+import { AlertTriangle } from "lucide-react";
+
+const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export const Route = createFileRoute("/_authenticated/workload")({
   head: () => ({
@@ -43,7 +47,38 @@ function weekLabel(key: string) {
   return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
 }
 
+type Stake = { courseId: string; weight: number; current: number | null };
+
+function useStakes() {
+  const { data: courses = [] } = useQuery(coursesQuery);
+  const { data: assignments = [] } = useQuery(assignmentsQuery);
+  const { data: categories = [] } = useQuery(gradeCategoriesQuery);
+  const weightById = new Map<string, number>();
+  const currentByCourse = new Map<string, number | null>();
+  for (const course of courses) {
+    const cats = categories
+      .filter((c) => c.course_id === course.id)
+      .map((c) => ({ name: c.name, percent: c.weight, perItem: c.per_item }));
+    const items = resolveCategories(
+      assignments.filter((a) => a.course_id === course.id),
+      cats,
+    );
+    const w = computeWeights(items, cats);
+    items.forEach((it, i) => {
+      if (w[i] && !it.extra_credit) weightById.set(it.id, w[i]!);
+    });
+    currentByCourse.set(course.id, summarizeGrade(items, cats).current);
+  }
+  return { weightById, currentByCourse };
+}
+
+/** High stakes: a course has ≥15% of its grade due, or ≥10% while you're below 80%. */
+function isHighStakes(s: Stake) {
+  return s.weight >= 15 || (s.weight >= 10 && s.current !== null && s.current < 80);
+}
+
 function Workload() {
+  const { weightById, currentByCourse } = useStakes();
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [], isLoading } = useQuery(assignmentsQuery);
 
@@ -90,10 +125,23 @@ function Workload() {
             const ratio = maxCount > 0 ? count / maxCount : 0;
             const isCurrent = key === thisWeek;
             const isPast = key < thisWeek;
+            const stakeMap = new Map<string, number>();
+            for (const a of list) {
+              const w = weightById.get(a.id);
+              if (w) stakeMap.set(a.course_id, (stakeMap.get(a.course_id) ?? 0) + w);
+            }
+            const stakes: Stake[] = [...stakeMap.entries()]
+              .map(([courseId, weight]) => ({
+                courseId,
+                weight: r1(weight),
+                current: currentByCourse.get(courseId) ?? null,
+              }))
+              .sort((a, b) => b.weight - a.weight);
+            const high = stakes.some(isHighStakes);
             return (
               <section
                 key={key}
-                className="rounded-xl border border-border bg-card p-4"
+                className={`rounded-xl border bg-card p-4 ${high ? "border-destructive/60 ring-1 ring-destructive/30" : "border-border"}`}
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-sm font-semibold">
@@ -106,6 +154,11 @@ function Workload() {
                     {isPast && (
                       <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
                         overdue
+                      </span>
+                    )}
+                    {high && (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-medium text-destructive-foreground">
+                        <AlertTriangle className="h-3 w-3" /> high stakes
                       </span>
                     )}
                   </h2>
@@ -125,6 +178,28 @@ function Workload() {
                     style={{ width: `${Math.max(8, ratio * 100)}%` }}
                   />
                 </div>
+                {stakes.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {stakes.map((s) => {
+                      const course = byCourse[s.courseId];
+                      const hot = isHighStakes(s);
+                      return (
+                        <span
+                          key={s.courseId}
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${hot ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-border bg-muted/50 text-muted-foreground"}`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: course?.color ?? "#94a3b8" }}
+                          />
+                          <span className="font-medium text-foreground">{course?.name ?? "Course"}</span>
+                          {s.weight}% of grade
+                          {s.current !== null && <> · you're at {r1(s.current)}%</>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
                 <ul className="mt-3 space-y-1.5">
                   {list
                     .slice()
