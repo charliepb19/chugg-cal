@@ -104,8 +104,8 @@ function DemoCalendar() {
                       key={it.title}
                       className={`mb-0.5 truncate rounded px-1 py-0.5 text-[10px] text-foreground ${it.done ? "line-through opacity-50" : ""} ${it.big ? "font-semibold" : ""}`}
                       style={{
-                        background: `color-mix(in oklab, ${COURSES[it.course].color} 25%, transparent)`,
-                        borderLeft: `3px solid ${COURSES[it.course].color}`,
+                        background: `color-mix(in oklab, ${COURSES[it.course]!.color} 25%, transparent)`,
+                        borderLeft: `3px solid ${COURSES[it.course]!.color}`,
                       }}
                     >
                       {it.done && "✓ "}
