@@ -1,3 +1,4 @@
+import { CrowdCheck } from "@/components/CrowdCheck";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -201,6 +202,8 @@ function CourseDetail() {
           Delete course
         </Button>
       </div>
+
+      {course ? <CrowdCheck course={course} assignments={assignments.filter((a) => a.course_id === courseId)} /> : null}
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
         <div className="flex items-end justify-between gap-4">
