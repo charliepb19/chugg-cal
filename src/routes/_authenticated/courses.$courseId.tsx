@@ -20,13 +20,13 @@ import { WhatIfGrade } from "@/components/WhatIfGrade";
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({
     meta: [
-      { title: "Import Assignments — ChuggCal" },
+      { title: "Import Assignments — chuggCal" },
       {
         name: "description",
         content:
           "Upload a syllabus PDF or an assignment screenshot to add this course's due dates automatically.",
       },
-      { property: "og:title", content: "Import Assignments — ChuggCal" },
+      { property: "og:title", content: "Import Assignments — chuggCal" },
       {
         property: "og:description",
         content:
@@ -280,7 +280,7 @@ function CourseDetail() {
       <section className="mt-8">
         <h2 className="text-sm font-medium">Add assignments</h2>
         <p className="mb-4 mt-1 text-sm text-muted-foreground">
-          Drop in a file — ChuggCal reads the due dates so you don't have to type them.
+          Drop in a file — chuggCal reads the due dates so you don't have to type them.
         </p>
         <ImportPanel courseId={courseId} semester={course?.semester ?? ""} />
       </section>

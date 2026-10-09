@@ -42,11 +42,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/dashboard" className="flex items-center gap-2">
             <img
               src={logoAsset.url}
-              alt="ChuggCal logo"
+              alt="chuggCal logo"
               className="h-7 w-7 rounded-md"
             />
             <span className="font-display text-lg font-semibold tracking-tight text-primary">
-              ChuggCal
+              chuggCal
             </span>
           </Link>
           <nav className="flex items-center gap-1">

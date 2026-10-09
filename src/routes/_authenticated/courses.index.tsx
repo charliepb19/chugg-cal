@@ -20,12 +20,12 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/courses/")({
   head: () => ({
     meta: [
-      { title: "Your Courses — ChuggCal" },
+      { title: "Your Courses — chuggCal" },
       {
         name: "description",
         content: "Create courses and import their assignments from a syllabus PDF or screenshot.",
       },
-      { property: "og:title", content: "Your Courses — ChuggCal" },
+      { property: "og:title", content: "Your Courses — chuggCal" },
       {
         property: "og:description",
         content: "Create courses and import their assignments from a syllabus PDF or screenshot.",

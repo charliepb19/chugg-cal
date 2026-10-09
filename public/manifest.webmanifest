@@ -1,6 +1,6 @@
 {
-  "name": "ChuggCal — Assignment Calendar",
-  "short_name": "ChuggCal",
+  "name": "chuggCal — Assignment Calendar",
+  "short_name": "chuggCal",
   "description": "Import your syllabus or assignment screenshots and see every due date in one calendar.",
   "start_url": "/dashboard",
   "scope": "/",

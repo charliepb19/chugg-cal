@@ -23,12 +23,12 @@ import { AssignmentTypeIcon } from "@/lib/assignment-type";
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
     meta: [
-      { title: "Assignment Calendar — ChuggCal" },
+      { title: "Assignment Calendar — chuggCal" },
       {
         name: "description",
         content: "A month view of every assignment across your courses, colour-coded by course.",
       },
-      { property: "og:title", content: "Assignment Calendar — ChuggCal" },
+      { property: "og:title", content: "Assignment Calendar — chuggCal" },
       {
         property: "og:description",
         content: "A month view of every assignment across your courses, colour-coded by course.",

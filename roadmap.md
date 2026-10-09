@@ -1,4 +1,4 @@
-# ChuggCal roadmap
+# chuggCal roadmap
 
 ## Earlier batch (done)
 1. [x] What-if grade calculator

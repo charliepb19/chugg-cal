@@ -11,13 +11,13 @@ import logoAsset from "@/assets/chuggcal-logo.png.asset.json";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in to ChuggCal — Assignment Calendar for Students" },
+      { title: "Sign in to chuggCal — Assignment Calendar for Students" },
       {
         name: "description",
         content:
-          "Sign in to ChuggCal to import your syllabus and see every assignment due date in one calendar.",
+          "Sign in to chuggCal to import your syllabus and see every assignment due date in one calendar.",
       },
-      { property: "og:title", content: "Sign in to ChuggCal" },
+      { property: "og:title", content: "Sign in to chuggCal" },
       {
         property: "og:description",
         content: "Import your syllabus and track every assignment due date in one place.",
@@ -91,9 +91,9 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-sm">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
-          <img src={logoAsset.url} alt="ChuggCal logo" className="h-9 w-9 rounded-lg" />
+          <img src={logoAsset.url} alt="chuggCal logo" className="h-9 w-9 rounded-lg" />
           <span className="font-display text-xl font-semibold tracking-tight text-primary">
-            ChuggCal
+            chuggCal
           </span>
         </Link>
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">

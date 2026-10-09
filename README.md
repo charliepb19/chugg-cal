@@ -1,14 +1,14 @@
-# ChuggCal
+# chuggCal
 
-ChuggCal is a school assignment calendar app that eliminates manual entry. Instead of typing in every due date by hand, upload a syllabus PDF or a screenshot of your assignment list from your school's LMS (D2L, Canvas, Blackboard, Moodle), and ChuggCal reads it and builds your calendar for you.
+chuggCal is a school assignment calendar app that eliminates manual entry. Instead of typing in every due date by hand, upload a syllabus PDF or a screenshot of your assignment list from your school's LMS (D2L, Canvas, Blackboard, Moodle), and chuggCal reads it and builds your calendar for you.
 
-## Why ChuggCal?
+## Why chuggCal?
 
-Keeping track of due dates across multiple classes usually means manually copying dates from a syllabus or LMS into a planner. ChuggCal removes that step — upload what you already have, and let the app do the parsing, weighting, and scheduling.
+Keeping track of due dates across multiple classes usually means manually copying dates from a syllabus or LMS into a planner. chuggCal removes that step — upload what you already have, and let the app do the parsing, weighting, and scheduling.
 
 ## Features
 
-- **Syllabus & screenshot import** — Upload a PDF syllabus or an LMS screenshot; ChuggCal extracts every assignment, exam, quiz, and reading, along with due dates and grading weights.
+- **Syllabus & screenshot import** — Upload a PDF syllabus or an LMS screenshot; chuggCal extracts every assignment, exam, quiz, and reading, along with due dates and grading weights.
 - **Smart date handling** — Distinguishes real due dates from "available"/opening dates, infers missing years from semester context, and expands recurring items (e.g. "quiz every Friday") automatically.
 - **Grading breakdown parsing** — Reads the syllabus's grading table (e.g. "Quizzes: 15%, Exams: 40%") and separates it from the dated calendar items.
 - **What-if grade calculator** — Model hypothetical scores to see their effect on your final grade.
