@@ -23,3 +23,4 @@
 - [ ] Attachments/links on assignments
 - [ ] iCal export / sync
 - [ ] Semester GPA roll-up
+- [x] Remove Work Schedule feature (user request)
