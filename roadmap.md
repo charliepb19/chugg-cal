@@ -24,3 +24,4 @@
 - [ ] iCal export / sync
 - [ ] Semester GPA roll-up
 - [x] Remove Work Schedule feature (user request)
+- [x] Crowd check: match course by code+school+section(+professor), flag date disagreements
