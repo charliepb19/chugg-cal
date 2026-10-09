@@ -11,6 +11,10 @@ import { AssignmentTypeIcon } from "@/lib/assignment-type";
 import { Onboarding } from "@/components/Onboarding";
 import { DueBanner } from "@/components/DueBanner";
 import { OnTrackForecast } from "@/components/OnTrackForecast";
+import { gradeCategoriesQuery } from "@/lib/db";
+import { PanicScoreCard } from "@/components/PanicScore";
+import { StudyDebtCard } from "@/components/StudyDebt";
+import { GradeInsuranceCard } from "@/components/GradeInsurance";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -52,6 +56,7 @@ function Dashboard() {
   const queryClient = useQueryClient();
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [], isLoading } = useQuery(assignmentsQuery);
+  const { data: categories = [] } = useQuery(gradeCategoriesQuery);
 
   const byCourse = Object.fromEntries(courses.map((c) => [c.id, c]));
   const open = assignments.filter((a) => !a.completed);
@@ -85,6 +90,14 @@ function Dashboard() {
 
       {!isLoading ? <DueBanner assignments={assignments} courses={courses} /> : null}
       {!isLoading ? <OnTrackForecast assignments={assignments} courses={courses} /> : null}
+
+      {!isLoading ? (
+        <div className="mt-4 space-y-3">
+          <PanicScoreCard assignments={assignments} courses={courses} categories={categories} />
+          <StudyDebtCard assignments={assignments} courses={courses} categories={categories} />
+          <GradeInsuranceCard assignments={assignments} courses={courses} categories={categories} />
+        </div>
+      ) : null}
 
       {isLoading ? (
         <p className="mt-10 text-sm text-muted-foreground">Loading…</p>
