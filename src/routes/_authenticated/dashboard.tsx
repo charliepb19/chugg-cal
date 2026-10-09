@@ -9,6 +9,7 @@ import { Upload } from "lucide-react";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { AssignmentTypeIcon } from "@/lib/assignment-type";
 import { Onboarding } from "@/components/Onboarding";
+import { DueBanner } from "@/components/DueBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -80,6 +81,8 @@ function Dashboard() {
           </Button>
         </Link>
       </div>
+
+      {!isLoading ? <DueBanner assignments={assignments} courses={courses} /> : null}
 
       {isLoading ? (
         <p className="mt-10 text-sm text-muted-foreground">Loading…</p>
