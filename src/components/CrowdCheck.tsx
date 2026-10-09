@@ -37,7 +37,10 @@ export function CrowdCheck({ course, assignments }: { course: Course; assignment
 
   async function save() {
     const { error } = await supabase.from("courses").update(form).eq("id", course.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Class details saved");
     qc.invalidateQueries({ queryKey: ["courses"] });
     qc.invalidateQueries({ queryKey: ["crowd_check", course.id] });
