@@ -82,17 +82,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ChuggCal — Assignment Calendar for Students" },
+      { title: "chuggCal — Assignment Calendar for Students" },
       { name: "description", content: "Import your syllabus or assignment screenshots and see every due date in one calendar." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "ChuggCal — Assignment Calendar for Students" },
+      { property: "og:title", content: "chuggCal — Assignment Calendar for Students" },
       { property: "og:description", content: "Import your syllabus or assignment screenshots and see every due date in one calendar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "theme-color", content: "#3D9B84" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "ChuggCal" },
+      { name: "apple-mobile-web-app-title", content: "chuggCal" },
     ],
     links: [
       {

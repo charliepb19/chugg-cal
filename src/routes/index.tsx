@@ -6,13 +6,13 @@ import logoAsset from "@/assets/chuggcal-logo.png.asset.json";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ChuggCal — Import Your Syllabus, See Every Due Date" },
+      { title: "chuggCal — Import Your Syllabus, See Every Due Date" },
       {
         name: "description",
         content:
-          "ChuggCal turns syllabus PDFs and assignment screenshots into a colour-coded school calendar. Stop typing assignments by hand.",
+          "chuggCal turns syllabus PDFs and assignment screenshots into a colour-coded school calendar. Stop typing assignments by hand.",
       },
-      { property: "og:title", content: "ChuggCal — Import Your Syllabus, See Every Due Date" },
+      { property: "og:title", content: "chuggCal — Import Your Syllabus, See Every Due Date" },
       {
         property: "og:description",
         content:
@@ -30,9 +30,9 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex h-14 max-w-5xl items-center px-4">
         <span className="flex items-center gap-2">
-          <img src={logoAsset.url} alt="ChuggCal logo" className="h-7 w-7 rounded-md" />
+          <img src={logoAsset.url} alt="chuggCal logo" className="h-7 w-7 rounded-md" />
           <span className="font-display text-lg font-semibold tracking-tight text-primary">
-            ChuggCal
+            chuggCal
           </span>
         </span>
         <Link to="/auth" className="ml-auto">
@@ -47,7 +47,7 @@ function Landing() {
           Never type an assignment again.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-          Upload your syllabus PDF or a screenshot of your course assignment list. ChuggCal reads
+          Upload your syllabus PDF or a screenshot of your course assignment list. chuggCal reads
           the due dates and builds your semester calendar for you.
         </p>
         <div className="mt-8 flex justify-center gap-3">

@@ -157,7 +157,7 @@ export function Onboarding({
         >
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              ChuggCal reads the dates, types and grade weights for you — you just review them.
+              chuggCal reads the dates, types and grade weights for you — you just review them.
             </p>
             {firstCourse ? (
               <Link to="/courses/$courseId" params={{ courseId: firstCourse.id }}>

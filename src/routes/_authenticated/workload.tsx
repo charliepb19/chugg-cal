@@ -11,12 +11,12 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 export const Route = createFileRoute("/_authenticated/workload")({
   head: () => ({
     meta: [
-      { title: "Workload — ChuggCal" },
+      { title: "Workload — chuggCal" },
       {
         name: "description",
         content: "See which weeks are busiest across all your courses.",
       },
-      { property: "og:title", content: "Workload — ChuggCal" },
+      { property: "og:title", content: "Workload — chuggCal" },
       {
         property: "og:description",
         content: "See which weeks are busiest across all your courses.",

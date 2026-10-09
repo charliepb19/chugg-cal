@@ -15,13 +15,13 @@ import { ImageUp, Loader2, Plus, Trash2, Briefcase } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/work")({
   head: () => ({
     meta: [
-      { title: "Work Schedule — ChuggCal" },
+      { title: "Work Schedule — chuggCal" },
       {
         name: "description",
         content:
           "Upload a screenshot of your work schedule and see your shifts alongside your coursework.",
       },
-      { property: "og:title", content: "Work Schedule — ChuggCal" },
+      { property: "og:title", content: "Work Schedule — chuggCal" },
       {
         property: "og:description",
         content:

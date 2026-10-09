@@ -8,12 +8,12 @@ import { ChevronRight } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/gradebook")({
   head: () => ({
     meta: [
-      { title: "Gradebook — ChuggCal" },
+      { title: "Gradebook — chuggCal" },
       {
         name: "description",
         content: "See your mark in every course at once, with weighted percentages and totals.",
       },
-      { property: "og:title", content: "Gradebook — ChuggCal" },
+      { property: "og:title", content: "Gradebook — chuggCal" },
       {
         property: "og:description",
         content: "See your mark in every course at once, with weighted percentages and totals.",

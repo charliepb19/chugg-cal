@@ -13,12 +13,12 @@ import { Onboarding } from "@/components/Onboarding";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Upcoming Assignments — ChuggCal" },
+      { title: "Upcoming Assignments — chuggCal" },
       {
         name: "description",
         content: "Every upcoming assignment across your courses, sorted by due date.",
       },
-      { property: "og:title", content: "Upcoming Assignments — ChuggCal" },
+      { property: "og:title", content: "Upcoming Assignments — chuggCal" },
       {
         property: "og:description",
         content: "Every upcoming assignment across your courses, sorted by due date.",
