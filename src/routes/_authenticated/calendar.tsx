@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { coursesQuery, assignmentsQuery, workShiftsQuery, shiftRangeLabel } from "@/lib/db";
+import { coursesQuery, assignmentsQuery, shiftRangeLabel, type WorkShift } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import {
   Check,
@@ -45,7 +45,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function CalendarPage() {
   const { data: courses = [] } = useQuery(coursesQuery);
   const { data: assignments = [] } = useQuery(assignmentsQuery);
-  const { data: shifts = [] } = useQuery(workShiftsQuery);
+  const shifts: WorkShift[] = [];
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const touchX = useRef<number | null>(null);
@@ -53,7 +53,7 @@ function CalendarPage() {
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
   const [hideCompleted, setHideCompleted] = useState(false);
-  const [showWork, setShowWork] = useState(false);
+  const showWork = false;
 
   async function moveAssignment(id: string, target: Date) {
     const a = assignments.find((x) => x.id === id);
@@ -303,28 +303,6 @@ function CalendarPage() {
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setShowWork((v) => !v)}
-          aria-pressed={showWork}
-          className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
-            showWork
-              ? "border-slate-500 bg-slate-600 text-white"
-              : "border-border bg-card text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Briefcase className="h-3 w-3" />
-          Show work schedule
-        </button>
-        {showWork && Object.keys(conflictDays).length > 0 && (
-          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {Object.keys(conflictDays).length} day
-            {Object.keys(conflictDays).length === 1 ? "" : "s"} where work overlaps school work
-          </span>
-        )}
-      </div>
 
 
 
