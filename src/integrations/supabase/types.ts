@@ -79,25 +79,37 @@ export type Database = {
       courses: {
         Row: {
           color: string
+          course_code: string
           created_at: string
           id: string
           name: string
+          professor: string
+          school: string
+          section: string
           semester: string
           user_id: string
         }
         Insert: {
           color?: string
+          course_code?: string
           created_at?: string
           id?: string
           name: string
+          professor?: string
+          school?: string
+          section?: string
           semester?: string
           user_id: string
         }
         Update: {
           color?: string
+          course_code?: string
           created_at?: string
           id?: string
           name?: string
+          professor?: string
+          school?: string
+          section?: string
           semester?: string
           user_id?: string
         }
@@ -188,7 +200,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      crowd_check: {
+        Args: { _course_id: string }
+        Returns: {
+          agree: number
+          assignment_id: string
+          classmates: number
+          common_date: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
