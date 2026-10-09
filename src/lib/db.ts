@@ -5,6 +5,10 @@ export type Course = {
   name: string;
   semester: string;
   color: string;
+  course_code: string;
+  school: string;
+  section: string;
+  professor: string;
   created_at: string;
 };
 
@@ -67,7 +71,7 @@ export const coursesQuery = {
   queryFn: async (): Promise<Course[]> => {
     const { data, error } = await supabase
       .from("courses")
-      .select("id,name,semester,color,created_at")
+      .select("id,name,semester,color,created_at,course_code,school,section,professor")
       .order("created_at", { ascending: true });
     if (error) throw error;
     return (data ?? []) as Course[];
