@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ChevronLeft, Trash2, Sparkles } from "lucide-react";
-import { summarizeGrade, letterGrade, computeWeights, resolveCategories } from "@/lib/grade";
+import { summarizeGrade, letterGrade, computeWeights, resolveCategories, gradeSanityWarning, matchesCategory, defaultPerItem } from "@/lib/grade";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { WhatIfGrade } from "@/components/WhatIfGrade";
 
@@ -61,6 +61,7 @@ function CourseDetail() {
   const effective = resolveCategories(items, catWeights);
   const grade = summarizeGrade(effective, catWeights);
   const itemWeights = computeWeights(effective, catWeights);
+  const sanityWarning = gradeSanityWarning(effective, catWeights);
   const catsDetected = courseCats.some((c) => c.source !== "manual");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -101,6 +102,28 @@ function CourseDetail() {
   async function toggle(id: string, completed: boolean) {
     await supabase.from("assignments").update({ completed }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["assignments"] });
+  }
+
+  // Undo a bad sort: pull items out of exam-like categories they don't
+  // belong to (e.g. homework sections dumped into "Final Exam") and let the
+  // matcher re-place them.
+  async function resortCategories() {
+    const misplaced = effective.filter(
+      (a) =>
+        a.category &&
+        defaultPerItem(a.category) &&
+        !matchesCategory(a.category, a),
+    );
+    if (!misplaced.length) {
+      toast.info("Nothing looks misplaced.");
+      return;
+    }
+    await supabase
+      .from("assignments")
+      .update({ category: "", weight: "" })
+      .in("id", misplaced.map((a) => a.id));
+    await queryClient.invalidateQueries({ queryKey: ["assignments"] });
+    toast.success(`Re-sorted ${misplaced.length} assignment${misplaced.length === 1 ? "" : "s"}.`);
   }
 
   async function setCategory(id: string, category: string) {
@@ -206,6 +229,14 @@ function CourseDetail() {
       {course ? <CrowdCheck course={course} assignments={assignments.filter((a) => a.course_id === courseId)} /> : null}
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
+        {sanityWarning ? (
+          <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
+            <p className="text-xs text-amber-700 dark:text-amber-400">{sanityWarning}</p>
+            <Button variant="secondary" size="sm" className="shrink-0" onClick={resortCategories}>
+              Re-sort categories
+            </Button>
+          </div>
+        ) : null}
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-sm font-medium">Grade so far</h2>
