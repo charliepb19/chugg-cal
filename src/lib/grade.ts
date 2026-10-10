@@ -87,16 +87,31 @@ export function resolveCategories<T extends { title: string; type: string; categ
   const used = new Set(
     first.map((i) => i.category.toLowerCase()).filter(Boolean),
   );
-  const empty = categories.filter((c) => c.name.trim() && !used.has(c.name.trim().toLowerCase()));
+  // Leftover items may only fall into a "catch-all" category — never into an
+  // exam-like one. Dumping unmatched homework into "Final Exam" (per-item)
+  // once made 8 homeworks count as 8 × 20% = 160% of the course.
+  const empty = categories.filter(
+    (c) => c.name.trim() && !used.has(c.name.trim().toLowerCase()) && !defaultPerItem(c.name),
+  );
   const withLeftover =
     empty.length === 1
       ? first.map((i) => (i.category ? i : { ...i, category: empty[0]!.name.trim() }))
       : first;
   // Siblings by name: "Assignment Zero" joins whatever "Assignment 1" is in.
+  // Exam-like categories are excluded for the same reason as above.
+  const examLike = new Set(
+    categories.filter((c) => defaultPerItem(c.name)).map((c) => c.name.trim().toLowerCase()),
+  );
   const byStem = new Map<string, string>();
   for (const i of withLeftover) {
     const stem = titleStem(i.title);
-    if (stem.length > 2 && i.category && !byStem.has(stem)) byStem.set(stem, i.category);
+    if (
+      stem.length > 2 &&
+      i.category &&
+      !examLike.has(i.category.toLowerCase()) &&
+      !byStem.has(stem)
+    )
+      byStem.set(stem, i.category);
   }
   return withLeftover.map((i) =>
     i.category ? i : { ...i, category: byStem.get(titleStem(i.title)) ?? "" },
