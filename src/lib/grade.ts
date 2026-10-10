@@ -284,8 +284,35 @@ export function categoryWarnings(
         `We found a ${label} and ${c.expectedCount} implied${c.note ? ` (${c.note})` : ""}, but only ${found} date${found === 1 ? "" : "s"} — check if any are missing.`,
       );
     }
+    // "Each item" only makes sense for a few items (e.g. 3 exams at 20%).
+    // If the items in it add up past 100% of the course, something is sorted wrong.
+    if (c.perItem && found > 0 && found * c.percent > 100) {
+      out.push(
+        `${c.name} is set to "each item" but has ${found} items — that's ${found * c.percent}% of the course. Check that only real ${c.name.toLowerCase()} items are in this category.`,
+      );
+    }
   }
   return out;
+}
+
+/**
+ * Sanity check on a finished grade breakdown: the total weight of a course
+ * should never pass 100% (extra credit excepted). Returns a warning string
+ * when it does, so the UI can flag it instead of showing grades over 100%.
+ */
+export function gradeSanityWarning(
+  items: Assignment[],
+  categories: CatLike[] = [],
+): string | null {
+  const weights = computeWeights(items, categories);
+  let total = 0;
+  for (const [i, a] of items.entries()) {
+    if (a.extra_credit) continue;
+    const w = weights[i];
+    if (w && w > 0) total += w;
+  }
+  if (total <= 100.5) return null;
+  return `These weights add up to ${Math.round(total)}% of the course — check that assignments are in the right grading categories.`;
 }
 
 export type GradeSummary = {
