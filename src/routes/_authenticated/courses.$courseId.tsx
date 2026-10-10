@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ChevronLeft, Trash2, Sparkles } from "lucide-react";
-import { summarizeGrade, letterGrade, computeWeights, resolveCategories } from "@/lib/grade";
+import { summarizeGrade, letterGrade, computeWeights, resolveCategories, gradeSanityWarning, matchesCategory, defaultPerItem } from "@/lib/grade";
 import { AssignmentDetailDialog } from "@/components/AssignmentDetailDialog";
 import { WhatIfGrade } from "@/components/WhatIfGrade";
 
@@ -61,6 +61,7 @@ function CourseDetail() {
   const effective = resolveCategories(items, catWeights);
   const grade = summarizeGrade(effective, catWeights);
   const itemWeights = computeWeights(effective, catWeights);
+  const sanityWarning = gradeSanityWarning(effective, catWeights);
   const catsDetected = courseCats.some((c) => c.source !== "manual");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
